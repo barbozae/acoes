@@ -1,7 +1,8 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-import numpy as np
+import streamlit_shadcn_ui as ui
+
 
 st.set_page_config(
     page_title="Investimentos",
@@ -16,7 +17,6 @@ st.set_page_config(
 @st.cache_data(ttl=21600)
 def get_acoes():
     tickers = yf.Tickers('^bvsp cyre3.sa bpac11.sa bbas3.sa sbsp3.sa recv3.sa')
-    
 
     ibovespa = tickers.tickers['^BVSP'].history(period='2y')
     cyrela = tickers.tickers['CYRE3.SA'].history(period='2y')
@@ -48,94 +48,164 @@ class Application:
     def __init__(self):
         self.df = get_acoes()
         self.display_data()
-
+        self.card()
+        self.navegacao()
+        
+    def navegacao(self):
+        tab1, tab2, tab3, tab4 = st.tabs(['Análise diária', 'Variação %', 'Volume', 'Dividendo'])
+        with tab1:
+            self.analise_diaria()
+        with tab2:
+            self.variacao()
+        with tab3:
+            self.volume()
+        with tab4:
+            st.header('Em desenvolvimento')
 
     def display_data(self):
-        self.df = get_acoes()
+        df = get_acoes()
         st.title('👨🏻‍💼 Análise Carteira de Ações')
-        
+
+        df['Date'] = pd.to_datetime(df['Date']).dt.date
+
         # Adiciona o slider para selecionar o intervalo de datas
-        dates = self.df['Date'].dt.strftime('%d/%m/%Y').unique()
-        
-        inicio_data, fim_data = st.select_slider(
+        dates = df['Date'].unique() #.dt.strftime('%d/%m/%Y').unique()
+        # st.write(df['Date'])
+        self.inicio_data, self.fim_data = st.select_slider(
                                                 "Selecione o intervalo de datas",
                                                 options=dates,
                                                 value=(dates.min(), dates.max())
                                                 )
-
         # Filtro por Symbol
-        select_symbol = st.multiselect('Selecione as ações', self.df['Symbol'].unique(), placeholder='Escolha uma opção')
+        self.select_symbol = st.multiselect('Selecione as ações', 
+                                       df['Symbol'].unique(), 
+                                       default=['CYRE3.SA', 'BPAC11.SA', 'BBAS3.SA', 'SBSP3.SA', 'RECV3.SA'],
+                                       placeholder='Escolha uma opção')
         
-        if select_symbol:
-            self.df = self.df[self.df['Symbol'].isin(select_symbol)]
+        if self.select_symbol:
+            df = df[df['Symbol'].isin(self.select_symbol)]
 
         # Filtra o DataFrame com base no intervalo de datas selecionado
-        mask = (self.df['Date'] >= inicio_data) & (self.df['Date'] <= fim_data)
-        filtered_df = self.df.loc[mask]
-        
+        mask = (df['Date'] >= self.inicio_data) & (df['Date'] <= self.fim_data)
+        self.filtered_df = df.loc[mask]
 
         # Verifique quantos símbolos únicos estão presentes no DataFrame filtrado
-        unique_symbols = filtered_df['Symbol'].unique()
+        self.unique_symbols = self.filtered_df['Symbol'].unique()
 
-        if len(unique_symbols) > 1:
+        if len(self.unique_symbols) > 1:
             # Se houver mais de um símbolo, use pivot_table para reestruturar o DataFrame
-            pivot_df = filtered_df.pivot_table(index='Date', columns='Symbol', values='Close')
+            self.pivot_df = self.filtered_df.pivot_table(index='Date', columns='Symbol', values='Close')
         else:
             # Se houver apenas um símbolo, mantenha o DataFrame como está
-            pivot_df = filtered_df.set_index('Date')[['Close']]
+            self.pivot_df = self.filtered_df.set_index('Date')[['Close']]
 
         # Ordene o DataFrame pelo índice 'Date'
-        pivot_df = pivot_df.sort_values(by='Date')
+        self.pivot_df = self.pivot_df.sort_values(by='Date')
 
-        def analise_diaria():    
-            col1, col2 = st.columns([1.5, 0.75])
-            with col1:
-                # Use st.line_chart para criar o gráfico de linhas
-                st.line_chart(pivot_df)
-            with col2:
-                # Formatar a coluna 'Date' para exibir apenas a data
-                filtered_df['Date'] = filtered_df['Date'].dt.strftime('%d\%m\%Y')
+    def card(self):
+        df = get_acoes()
+        df['Date'] = pd.to_datetime(df['Date']).dt.date
+        mask = (df['Date'] >= self.inicio_data) & (df['Date'] <= self.fim_data)
+        df = df.loc[mask]
+        # Encontrar o valor máximo da coluna 'Close' para cada 'Symbol'
+        max_close_symbol = df.groupby('Symbol')['Close'].last()
+    
+        # Encontrar o último valor da coluna 'Variação' para cada 'Symbol'
+        last_variation_symbol = df.groupby('Symbol')['Variação'].last()
 
-                df = filtered_df.drop('Dividends', axis=1)
-                st.dataframe(df, hide_index=True, column_order=['Date', 'Symbol', 'Open', 'Low', 'Close', 'Variação'])
+        cols = st.columns(7)
+        with cols[0]:
+            ui.metric_card(title="Ibovespa",
+                        content=(max_close_symbol['^BVSP.SA']).round(2),
+                        description=f'{last_variation_symbol['^BVSP.SA'].round(2)}% Variação',
+                        key="card1")
+        # with cols[1]:
+        #     ui.metric_card(title="Cyrela",
+        #                    content=max_close_symbol.get('CYRE3.SA', 0.0),
+        #                    description=f'{last_variation_symbol.get('CYRE3.SA', 0)}% Variação',
+        #                    key="card2")
+        with cols[1]:
+            ui.metric_card(title="Cyrela",
+                           content=(max_close_symbol['CYRE3.SA']).round(2),
+                           description=f'{last_variation_symbol['CYRE3.SA'].round(2)}% Variação',
+                           key="card2")
+        with cols[2]:
+            ui.metric_card(title="Banco Pactual",
+                           content=(max_close_symbol['BPAC11.SA']).round(2),
+                           description=f'{last_variation_symbol['BPAC11.SA'].round(2)}% Variação',
+                           key="card3")
+        with cols[3]:
+            ui.metric_card(title="Banco do Brasil",
+                           content=max_close_symbol['BBAS3.SA'].round(2),
+                           description=f'{last_variation_symbol['BBAS3.SA'].round(2)}% Variação',
+                           key="card4")
+        with cols[4]:
+            ui.metric_card(title="Sabesp",
+                           content=max_close_symbol['SBSP3.SA'].round(2),
+                           description=f'{last_variation_symbol['SBSP3.SA'].round(2)}% Variação',
+                           key="card5")
+        with cols[5]:
+            ui.metric_card(title="Petro Recôncavo",
+                           content=max_close_symbol['RECV3.SA'].round(2),
+                           description=f'{last_variation_symbol['RECV3.SA'].round(2)}% Variação',
+                           key="card6")
 
-        def variacao():
-            if len(unique_symbols) > 1:
-                # Se houver mais de um símbolo, use pivot_table para reestruturar o DataFrame
-                pivot_df_variacao = filtered_df.pivot_table(index='Date', columns='Symbol', values='Variação')
-            else:
-                # Se houver apenas um símbolo, mantenha o DataFrame como está
-                pivot_df_variacao = filtered_df.set_index('Date')[['Variação']]
+        # Drop o índice '^BVSP.SA', para somar a variação da carteira
+        if '^BVSP.SA' in last_variation_symbol.index:
+            last_variation_symbol = last_variation_symbol.drop('^BVSP.SA')
 
-            # Ordene o DataFrame pelo índice 'Date'
-            pivot_df_variacao = pivot_df_variacao.sort_values(by='Date')
+        # Encontrar o símbolo com a maior variação
+        symbol_max_variation = last_variation_symbol.idxmax()
 
-            st.line_chart(pivot_df_variacao)
+        # symbol_max_variation = last_variation_symbol.idxmax() if not last_variation_symbol.empty else "Nenhum destaque"
 
-        def volume():
-            if len(unique_symbols) > 1:
-                # Se houver mais de um símbolo, use pivot_table para reestruturar o DataFrame
-                pivot_df_volume = filtered_df.pivot_table(index='Date', columns='Symbol', values='Volume')
-            else:
-                # Se houver apenas um símbolo, mantenha o DataFrame como está
-                pivot_df_volume = filtered_df.set_index('Date')[['Volume']]
+        with cols[6]:
+            ui.metric_card(title="Fechamento",
+                        #    content=(max_close_symbol['RECV3.SA']).round(2),
+                           content=last_variation_symbol.sum().round(2),
+                           description=f'Destaque {symbol_max_variation}',
+                           key="card7")
 
-            # Ordene o DataFrame pelo índice 'Date'
-            pivot_df_volume = pivot_df_volume.sort_values(by='Date')
+    def analise_diaria(self):
+        df = self.filtered_df.copy()
+        col1, col2 = st.columns([1.5, 0.75])
+        with col1:
+            # Use st.line_chart para criar o gráfico de linhas
+            st.line_chart(self.pivot_df)
+        with col2:
+            # Formatar a coluna 'Date' para ordernar
+            # df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y')
 
-            st.line_chart(pivot_df_volume)
-            
-            
+            df = df.sort_values(by='Date', ascending=False)
 
-        tab1, tab2, tab3 = st.tabs(['Análise diária', 'Variação %', 'Volume'])
+            df = df.drop('Dividends', axis=1)
+            st.dataframe(df, hide_index=True, column_order=['Date', 'Symbol', 'Open', 'Low', 'Close', 'Variação'])
 
-        with tab1:
-            analise_diaria()
-        with tab2:
-            variacao()
-        with tab3:
-            volume()
+    def variacao(self):
+        if len(self.unique_symbols) > 1:
+            # Se houver mais de um símbolo, use pivot_table para reestruturar o DataFrame
+            pivot_df_variacao = self.filtered_df.pivot_table(index='Date', columns='Symbol', values='Variação')
+        else:
+            # Se houver apenas um símbolo, mantenha o DataFrame como está
+            pivot_df_variacao = self.filtered_df.set_index('Date')[['Variação']]
 
+        # Ordene o DataFrame pelo índice 'Date'
+        pivot_df_variacao = pivot_df_variacao.sort_values(by='Date')
+
+        st.line_chart(pivot_df_variacao)
+
+    def volume(self):
+        if len(self.unique_symbols) > 1:
+            # Se houver mais de um símbolo, use pivot_table para reestruturar o DataFrame
+            pivot_df_volume = self.filtered_df.pivot_table(index='Date', columns='Symbol', values='Volume')
+        else:
+            # Se houver apenas um símbolo, mantenha o DataFrame como está
+            pivot_df_volume = self.filtered_df.set_index('Date')[['Volume']]
+
+        # Ordene o DataFrame pelo índice 'Date'
+        pivot_df_volume = pivot_df_volume.sort_values(by='Date')
+
+        st.line_chart(pivot_df_volume)
 
 
 if __name__ == "__main__":
