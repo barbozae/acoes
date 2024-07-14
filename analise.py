@@ -116,37 +116,32 @@ class Application:
         with cols[0]:
             ui.metric_card(title="Ibovespa",
                         content=(max_close_symbol['^BVSP.SA']).round(2),
-                        description=f'{last_variation_symbol['^BVSP.SA'].round(2)}% Variação',
+                        description=f"{last_variation_symbol['^BVSP.SA'].round(2)}% Variação",
                         key="card1")
-        # with cols[1]:
-        #     ui.metric_card(title="Cyrela",
-        #                    content=max_close_symbol.get('CYRE3.SA', 0.0),
-        #                    description=f'{last_variation_symbol.get('CYRE3.SA', 0)}% Variação',
-        #                    key="card2")
         with cols[1]:
             ui.metric_card(title="Cyrela",
                            content=(max_close_symbol['CYRE3.SA']).round(2),
-                           description=f'{last_variation_symbol['CYRE3.SA'].round(2)}% Variação',
+                           description=f"{last_variation_symbol['CYRE3.SA'].round(2)}% Variação",
                            key="card2")
         with cols[2]:
             ui.metric_card(title="Banco Pactual",
                            content=(max_close_symbol['BPAC11.SA']).round(2),
-                           description=f'{last_variation_symbol['BPAC11.SA'].round(2)}% Variação',
+                           description=f"{last_variation_symbol['BPAC11.SA'].round(2)}% Variação",
                            key="card3")
         with cols[3]:
             ui.metric_card(title="Banco do Brasil",
                            content=max_close_symbol['BBAS3.SA'].round(2),
-                           description=f'{last_variation_symbol['BBAS3.SA'].round(2)}% Variação',
+                           description=f"{last_variation_symbol['BBAS3.SA'].round(2)}% Variação",
                            key="card4")
         with cols[4]:
             ui.metric_card(title="Sabesp",
                            content=max_close_symbol['SBSP3.SA'].round(2),
-                           description=f'{last_variation_symbol['SBSP3.SA'].round(2)}% Variação',
+                           description=f"{last_variation_symbol['SBSP3.SA'].round(2)}% Variação",
                            key="card5")
         with cols[5]:
             ui.metric_card(title="Petro Recôncavo",
                            content=max_close_symbol['RECV3.SA'].round(2),
-                           description=f'{last_variation_symbol['RECV3.SA'].round(2)}% Variação',
+                           description=f"{last_variation_symbol['RECV3.SA'].round(2)}% Variação",
                            key="card6")
 
         # Drop o índice '^BVSP.SA', para somar a variação da carteira
@@ -196,7 +191,6 @@ class Application:
         pivot_df_variacao['Linha 0'] = 0
 
         st.line_chart(pivot_df_variacao)
-
 
         # NÃO ESTOU UTILIZANDO ESSE GRÁFICO
         def grafico_com_altair():
