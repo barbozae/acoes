@@ -15,7 +15,7 @@ st.set_page_config(
         'About': 'Aplicativo desenvolvido por Edson Barboza com objetivo de realizar acompanhamento de ações.'
     })
 
-@st.cache_data(ttl=21600)
+@st.cache_data(ttl=180)
 def get_acoes():
     tickers = yf.Tickers('^bvsp cyre3.sa bpac11.sa bbas3.sa sbsp3.sa recv3.sa')
 
