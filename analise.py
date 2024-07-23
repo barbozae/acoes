@@ -15,9 +15,9 @@ st.set_page_config(
         'About': 'Aplicativo desenvolvido por Edson Barboza com objetivo de realizar acompanhamento de ações.'
     })
 
-@st.cache_data(ttl=180)
+@st.cache_data(ttl=18000)
 def get_acoes():
-    tickers = yf.Tickers('^bvsp cyre3.sa bpac11.sa bbas3.sa sbsp3.sa recv3.sa')
+    tickers = yf.Tickers('^bvsp cyre3.sa bpac11.sa bbas3.sa sbsp3.sa recv3.sa brcr11.sa')
 
     ibovespa = tickers.tickers['^BVSP'].history(period='2y')
     cyrela = tickers.tickers['CYRE3.SA'].history(period='2y')
@@ -25,6 +25,7 @@ def get_acoes():
     brasil_on = tickers.tickers['BBAS3.SA'].history(period="2y")
     sabesp = tickers.tickers['SBSP3.SA'].history(period="2y")
     petro = tickers.tickers['RECV3.SA'].history(period="2y")
+    fii_brcr = tickers.tickers['BRCR11.SA'].history(period="2y")
 
     # Adicionar uma coluna para identificar cada ação
     ibovespa['Symbol'] = '^BVSP.SA'
@@ -33,9 +34,10 @@ def get_acoes():
     brasil_on['Symbol'] = 'BBAS3.SA'
     sabesp['Symbol'] = 'SBSP3.SA'
     petro['Symbol'] = 'RECV3.SA'
+    fii_brcr['Symbol'] = 'BRCR11.SA'
 
     # Concatenar todos os DataFrames
-    dfs = [ibovespa, cyrela, banco_BTGP, brasil_on, sabesp, petro]
+    dfs = [ibovespa, cyrela, banco_BTGP, brasil_on, sabesp, petro, fii_brcr]
     df_concat = pd.concat(dfs)
     df_concat = df_concat.drop('Stock Splits', axis=1)
 
@@ -112,7 +114,7 @@ class Application:
         # Encontrar o último valor da coluna 'Variação' para cada 'Symbol'
         last_variation_symbol = df.groupby('Symbol')['Variação'].last()
 
-        cols = st.columns(7)
+        cols = st.columns(8)
         with cols[0]:
             ui.metric_card(title="Ibovespa",
                         content=(max_close_symbol['^BVSP.SA']).round(2),
@@ -129,7 +131,7 @@ class Application:
                            description=f"{last_variation_symbol['BPAC11.SA'].round(2)}% Variação",
                            key="card3")
         with cols[3]:
-            ui.metric_card(title="Banco do Brasil",
+            ui.metric_card(title="Banco Brasil",
                            content=max_close_symbol['BBAS3.SA'].round(2),
                            description=f"{last_variation_symbol['BBAS3.SA'].round(2)}% Variação",
                            key="card4")
@@ -139,7 +141,7 @@ class Application:
                            description=f"{last_variation_symbol['SBSP3.SA'].round(2)}% Variação",
                            key="card5")
         with cols[5]:
-            ui.metric_card(title="Petro Recôncavo",
+            ui.metric_card(title="Petro Recônc",
                            content=max_close_symbol['RECV3.SA'].round(2),
                            description=f"{last_variation_symbol['RECV3.SA'].round(2)}% Variação",
                            key="card6")
@@ -159,6 +161,11 @@ class Application:
                            content=last_variation_symbol.sum().round(2),
                            description=f'Destaque {symbol_max_variation}',
                            key="card7")
+        with cols[7]:
+            ui.metric_card(title="Fundo Imob",
+                           content=max_close_symbol['BRCR11.SA'].round(2),
+                           description=f"{last_variation_symbol['BRCR11.SA'].round(2)}% Variação",
+                           key="card8")
 
     def analise_diaria(self):
         df = self.filtered_df.copy()
@@ -189,12 +196,13 @@ class Application:
         # Calculate the rolling mean with a window of 30 days
         pivot_df_variacao['Média Móvel'] = pivot_df_variacao.mean(axis=1).rolling(window=30).mean()
         pivot_df_variacao['Linha 0'] = 0
+
         st.line_chart(pivot_df_variacao)
 
         st.write('---')
-        
         total_variação = pivot_df_variacao.drop(['Média Móvel', 'Linha 0'], axis=1)
         total_variação = total_variação.sum(axis=0)
+
         st.line_chart(total_variação, color='#39FF14')
 
         # NÃO ESTOU UTILIZANDO ESSE GRÁFICO
