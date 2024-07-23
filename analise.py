@@ -156,15 +156,15 @@ class Application:
         # symbol_max_variation = last_variation_symbol.idxmax() if not last_variation_symbol.empty else "Nenhum destaque"
 
         with cols[6]:
+            ui.metric_card(title="Fundo Imob",
+                           content=max_close_symbol['BRCR11.SA'].round(2),
+                           description=f"{last_variation_symbol['BRCR11.SA'].round(2)}% Variação",
+                           key="card7")
+        with cols[7]:
             ui.metric_card(title="Fechamento",
                         #    content=(max_close_symbol['RECV3.SA']).round(2),
                            content=last_variation_symbol.sum().round(2),
                            description=f'Destaque {symbol_max_variation}',
-                           key="card7")
-        with cols[7]:
-            ui.metric_card(title="Fundo Imob",
-                           content=max_close_symbol['BRCR11.SA'].round(2),
-                           description=f"{last_variation_symbol['BRCR11.SA'].round(2)}% Variação",
                            key="card8")
 
     def analise_diaria(self):
