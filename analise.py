@@ -81,7 +81,7 @@ class Application:
         # Filtro por Symbol
         self.select_symbol = st.multiselect('Selecione as ações', 
                                        df['Symbol'].unique(), 
-                                       default=['CYRE3.SA', 'BPAC11.SA', 'BBAS3.SA', 'SBSP3.SA', 'RECV3.SA'],
+                                       default=['CYRE3.SA', 'BPAC11.SA', 'BBAS3.SA', 'SBSP3.SA', 'RECV3.SA', 'BRCR11.SA'],
                                        placeholder='Escolha uma opção')
         if self.select_symbol:
             df = df[df['Symbol'].isin(self.select_symbol)]
