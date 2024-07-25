@@ -196,14 +196,17 @@ class Application:
         # Calculate the rolling mean with a window of 30 days
         pivot_df_variacao['Média Móvel'] = pivot_df_variacao.mean(axis=1).rolling(window=30).mean()
         pivot_df_variacao['Linha 0'] = 0
-
         st.line_chart(pivot_df_variacao)
 
-        st.write('---')
-        total_variação = pivot_df_variacao.drop(['Média Móvel', 'Linha 0'], axis=1)
-        total_variação = total_variação.sum(axis=0)
+        st.write('Variação acumulada por Período')
+        variacao_total = pivot_df_variacao.copy()
+        variacao_total['Total'] = variacao_total.loc[:, :].sum(axis=1)
+        st.line_chart(variacao_total['Total'], color='#FFBF00')
 
-        st.line_chart(total_variação, color='#39FF14')
+        st.write('Variação acumulada por Symbol')
+        variação_symbol = pivot_df_variacao.drop(['Média Móvel', 'Linha 0'], axis=1)
+        variação_symbol = variação_symbol.sum(axis=0)
+        st.line_chart(variação_symbol, color='#39FF14')
 
         # NÃO ESTOU UTILIZANDO ESSE GRÁFICO
         def grafico_com_altair():
