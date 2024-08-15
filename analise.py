@@ -88,12 +88,12 @@ class Application:
                                                 )
         # Filtro por Symbol
         selecao = st.radio('Seleção',
-                                    ['Ibovespa', 'Plano Inicial', 'Automatização 1'], horizontal=True, index=1)
+                                    ['All', 'Plano Inicial', 'Automatização 1'], horizontal=True, index=1)
         
         # Obter os símbolos disponíveis no DataFrame
         simbolos = df['Symbol'].unique()
 
-        if selecao == 'Ibovespa':
+        if selecao == 'All':
             default_selecao = []
         elif selecao == 'Plano Inicial':
             default_selecao = ['CYRE3.SA', 'BPAC11.SA', 'BBAS3.SA', 'SBSP3.SA', 'RECV3.SA']
