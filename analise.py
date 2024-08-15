@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit_shadcn_ui as ui
 import altair as alt
 
-
+#TODO Inserir todas as seleções em dividendos
 st.set_page_config(
     page_title="Investimentos",
     page_icon="💲",
@@ -17,7 +17,7 @@ st.set_page_config(
 
 @st.cache_data(ttl=18000)
 def get_acoes():
-    tickers = yf.Tickers('^bvsp cyre3.sa bpac11.sa bbas3.sa sbsp3.sa recv3.sa brcr11.sa')
+    tickers = yf.Tickers('^bvsp cyre3.sa bpac11.sa bbas3.sa sbsp3.sa recv3.sa brcr11.sa prio3.sa sanb11.sa b3sa3.sa elet3.sa')
 
     ibovespa = tickers.tickers['^BVSP'].history(period='2y')
     cyrela = tickers.tickers['CYRE3.SA'].history(period='2y')
@@ -26,6 +26,10 @@ def get_acoes():
     sabesp = tickers.tickers['SBSP3.SA'].history(period="2y")
     petro = tickers.tickers['RECV3.SA'].history(period="2y")
     fii_brcr = tickers.tickers['BRCR11.SA'].history(period="2y")
+    petrorio = tickers.tickers['PRIO3.SA'].history(period="2y")
+    santander = tickers.tickers['SANB11.SA'].history(period="2y")
+    b3 = tickers.tickers['B3SA3.SA'].history(period="2y")
+    eletrobras = tickers.tickers['ELET3.SA'].history(period="2y")
 
     # Adicionar uma coluna para identificar cada ação
     ibovespa['Symbol'] = '^BVSP.SA'
@@ -35,9 +39,13 @@ def get_acoes():
     sabesp['Symbol'] = 'SBSP3.SA'
     petro['Symbol'] = 'RECV3.SA'
     fii_brcr['Symbol'] = 'BRCR11.SA'
+    petrorio['Symbol'] = 'PRIO3.SA'
+    santander['Symbol'] = 'SANB11.SA'
+    b3['Symbol'] = 'B3SA3.SA'
+    eletrobras['Symbol'] = 'ELET3.SA'
 
     # Concatenar todos os DataFrames
-    dfs = [ibovespa, cyrela, banco_BTGP, brasil_on, sabesp, petro, fii_brcr]
+    dfs = [ibovespa, cyrela, banco_BTGP, brasil_on, sabesp, petro, fii_brcr, petrorio, santander, b3, eletrobras]
     df_concat = pd.concat(dfs)
     df_concat = df_concat.drop('Stock Splits', axis=1)
 
@@ -68,7 +76,7 @@ class Application:
     def display_data(self):
         df = get_acoes()
         st.title('👨🏻‍💼 Análise Carteira de Ações')
-
+        
         df['Date'] = pd.to_datetime(df['Date']).dt.date
         # Adiciona o slider para selecionar o intervalo de datas
         dates = df['Date'].unique() #.dt.strftime('%d/%m/%Y').unique()
@@ -79,9 +87,27 @@ class Application:
                                                 value=(dates.min(), dates.max())
                                                 )
         # Filtro por Symbol
+        selecao = st.radio('Seleção',
+                                    ['Ibovespa', 'Plano Inicial', 'Automatização 1'], horizontal=True, index=1)
+        
+        # Obter os símbolos disponíveis no DataFrame
+        simbolos = df['Symbol'].unique()
+
+        if selecao == 'Ibovespa':
+            default_selecao = []
+        elif selecao == 'Plano Inicial':
+            default_selecao = ['CYRE3.SA', 'BPAC11.SA', 'BBAS3.SA', 'SBSP3.SA', 'RECV3.SA']
+        else:
+            default_selecao = ['SBSP3.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
+
+        # st.write(default_selecao)
+
+        # Garantir que os valores de selecao estão nas opções disponíveis
+        default_selecao = [item for item in default_selecao if item in simbolos]
+
         self.select_symbol = st.multiselect('Selecione as ações', 
-                                       df['Symbol'].unique(), 
-                                       default=['CYRE3.SA', 'BPAC11.SA', 'BBAS3.SA', 'SBSP3.SA', 'RECV3.SA', 'BRCR11.SA'],
+                                       simbolos, 
+                                       default=default_selecao,
                                        placeholder='Escolha uma opção')
         if self.select_symbol:
             df = df[df['Symbol'].isin(self.select_symbol)]
@@ -108,64 +134,121 @@ class Application:
         df['Date'] = pd.to_datetime(df['Date']).dt.date
         mask = (df['Date'] >= self.inicio_data) & (df['Date'] <= self.fim_data)
         df = df.loc[mask]
+
         # Encontrar o valor máximo da coluna 'Close' para cada 'Symbol'
         max_close_symbol = df.groupby('Symbol')['Close'].last()
-    
+
         # Encontrar o último valor da coluna 'Variação' para cada 'Symbol'
         last_variation_symbol = df.groupby('Symbol')['Variação'].last()
 
-        cols = st.columns(8)
-        with cols[0]:
-            ui.metric_card(title="Ibovespa",
-                        content=(max_close_symbol['^BVSP.SA']).round(2),
-                        description=f"{last_variation_symbol['^BVSP.SA'].round(2)}% Variação",
-                        key="card1")
-        with cols[1]:
-            ui.metric_card(title="Cyrela",
-                           content=(max_close_symbol['CYRE3.SA']).round(2),
-                           description=f"{last_variation_symbol['CYRE3.SA'].round(2)}% Variação",
-                           key="card2")
-        with cols[2]:
-            ui.metric_card(title="Banco Pactual",
-                           content=(max_close_symbol['BPAC11.SA']).round(2),
-                           description=f"{last_variation_symbol['BPAC11.SA'].round(2)}% Variação",
-                           key="card3")
-        with cols[3]:
-            ui.metric_card(title="Banco Brasil",
-                           content=max_close_symbol['BBAS3.SA'].round(2),
-                           description=f"{last_variation_symbol['BBAS3.SA'].round(2)}% Variação",
-                           key="card4")
-        with cols[4]:
-            ui.metric_card(title="Sabesp",
-                           content=max_close_symbol['SBSP3.SA'].round(2),
-                           description=f"{last_variation_symbol['SBSP3.SA'].round(2)}% Variação",
-                           key="card5")
-        with cols[5]:
-            ui.metric_card(title="Petro Recônc",
-                           content=max_close_symbol['RECV3.SA'].round(2),
-                           description=f"{last_variation_symbol['RECV3.SA'].round(2)}% Variação",
-                           key="card6")
-
-        # Drop o índice '^BVSP.SA', para somar a variação da carteira
-        if '^BVSP.SA' in last_variation_symbol.index:
-            last_variation_symbol = last_variation_symbol.drop('^BVSP.SA')
-
         # Encontrar o símbolo com a maior variação
-        symbol_max_variation = last_variation_symbol.idxmax()
+        symbol_max_variation = last_variation_symbol.idxmax() if not last_variation_symbol.empty else "Nenhum destaque"
 
-        # symbol_max_variation = last_variation_symbol.idxmax() if not last_variation_symbol.empty else "Nenhum destaque"
+        # Supondo que você tenha um seletor de símbolos (self.select_symbol)
+        if self.select_symbol:
+            # Filtrar os dados conforme a seleção feita
+            filtered_symbols = [symbol for symbol in self.select_symbol if symbol in max_close_symbol.index]
 
-        with cols[6]:
-            ui.metric_card(title="Fundo Imob",
-                           content=max_close_symbol['BRCR11.SA'].round(2),
-                           description=f"{last_variation_symbol['BRCR11.SA'].round(2)}% Variação",
-                           key="card7")
-        with cols[7]:
-            ui.metric_card(title="Fechamento",
-                        #    content=(max_close_symbol['RECV3.SA']).round(2),
-                           content=last_variation_symbol.sum().round(2),
-                           description=f'Destaque {symbol_max_variation}',
-                           key="card8")
+            # Criar o número correto de colunas
+            cols = st.columns(len(filtered_symbols) + 2)  # Adiciona mais duas colunas para os cartões fixos
+            for i, symbol in enumerate(filtered_symbols):
+                with cols[i]:
+                    ui.metric_card(
+                        title=symbol,
+                        content=max_close_symbol[symbol].round(2),
+                        description=f"{last_variation_symbol[symbol].round(2)}% Variação",
+                        key=f"card{i+1}"
+                    )
+
+            # Adiciona o cartão fixo para "Fundo Imob"
+            with cols[len(filtered_symbols)]:
+                ui.metric_card(
+                    title="Fundo Imob",
+                    content=max_close_symbol['BRCR11.SA'].round(2),
+                    description=f"{last_variation_symbol['BRCR11.SA'].round(2)}% Variação",
+                    key="card77"
+                )
+
+            # Calcular o valor dinâmico do fechamento com base nos símbolos filtrados
+            filtered_variations = last_variation_symbol[filtered_symbols]
+            fechamento_value = last_variation_symbol[filtered_symbols].sum() + last_variation_symbol['BRCR11.SA'] if filtered_symbols else 0
+
+            # Encontrar o símbolo com a maior variação entre os símbolos filtrados
+            symbol_max_variation_filtered = filtered_variations.idxmax() if not filtered_variations.empty else "Nenhum destaque"
+
+            # Adiciona o cartão dinâmico para "Fechamento"
+            with cols[len(filtered_symbols) + 1]:
+                ui.metric_card(
+                    title="Fechamento",
+                    content=fechamento_value.round(2),
+                    description=f'Destaque {symbol_max_variation_filtered}',
+                    key="card88"
+                )
+
+        
+
+        
+        
+
+
+
+
+
+
+        # automatização 1
+
+        # cols = st.columns(8)
+        # with cols[0]:
+        #     ui.metric_card(title="Ibovespa",
+        #                 content=(max_close_symbol['^BVSP.SA']).round(2),
+        #                 description=f"{last_variation_symbol['^BVSP.SA'].round(2)}% Variação",
+        #                 key="card1")
+        # with cols[1]:
+        #     ui.metric_card(title="PetroRio",
+        #                    content=(max_close_symbol['PRIO3.SA']).round(2),
+        #                    description=f"{last_variation_symbol['PRIO3.SA'].round(2)}% Variação",
+        #                    key="card2")
+        # with cols[2]:
+        #     ui.metric_card(title="Santander",
+        #                    content=(max_close_symbol['SANB11.SA']).round(2),
+        #                    description=f"{last_variation_symbol['SANB11.SA'].round(2)}% Variação",
+        #                    key="card3")
+        # with cols[3]:
+        #     ui.metric_card(title="B3",
+        #                    content=max_close_symbol['B3SA3.SA'].round(2),
+        #                    description=f"{last_variation_symbol['B3SA3.SA'].round(2)}% Variação",
+        #                    key="card4")
+        # with cols[4]:
+        #     ui.metric_card(title="Sabesp",
+        #                    content=max_close_symbol['SBSP3.SA'].round(2),
+        #                    description=f"{last_variation_symbol['SBSP3.SA'].round(2)}% Variação",
+        #                    key="card5")
+        # with cols[5]:
+        #     ui.metric_card(title="Eletrobras",
+        #                    content=max_close_symbol['ELET3.SA'].round(2),
+        #                    description=f"{last_variation_symbol['ELET3.SA'].round(2)}% Variação",
+        #                    key="card6")
+
+        # # Drop o índice '^BVSP.SA', para somar a variação da carteira
+        # if '^BVSP.SA' in last_variation_symbol.index:
+        #     last_variation_symbol = last_variation_symbol.drop('^BVSP.SA')
+
+        # # Encontrar o símbolo com a maior variação
+        # symbol_max_variation = last_variation_symbol.idxmax()
+
+        # # symbol_max_variation = last_variation_symbol.idxmax() if not last_variation_symbol.empty else "Nenhum destaque"
+
+        # with cols[6]:
+        #     ui.metric_card(title="Fundo Imob",
+        #                    content=max_close_symbol['BRCR11.SA'].round(2),
+        #                    description=f"{last_variation_symbol['BRCR11.SA'].round(2)}% Variação",
+        #                    key="card7")
+        # with cols[7]:
+        #     ui.metric_card(title="Fechamento",
+        #                 #    content=(max_close_symbol['RECV3.SA']).round(2),
+        #                    content=last_variation_symbol.sum().round(2),
+        #                    description=f'Destaque {symbol_max_variation}',
+        #                    key="card8")
 
     def analise_diaria(self):
         df = self.filtered_df.copy()
@@ -174,11 +257,7 @@ class Application:
             # Use st.line_chart para criar o gráfico de linhas
             st.line_chart(self.pivot_df)
         with col2:
-            # Formatar a coluna 'Date' para ordernar
-            # df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y')
-
             df = df.sort_values(by='Date', ascending=False)
-
             df = df.drop('Dividends', axis=1)
             st.dataframe(df, hide_index=True, column_order=['Date', 'Symbol', 'Open', 'Low', 'Close', 'Variação'])
 
