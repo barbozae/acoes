@@ -17,7 +17,8 @@ st.set_page_config(
 
 @st.cache_data(ttl=18000)
 def get_acoes():
-    tickers = yf.Tickers('^bvsp cyre3.sa bpac11.sa bbas3.sa sbsp3.sa recv3.sa brcr11.sa prio3.sa sanb11.sa b3sa3.sa elet3.sa')
+    tickers = yf.Tickers('^bvsp cyre3.sa bpac11.sa bbas3.sa sbsp3.sa recv3.sa brcr11.sa prio3.sa sanb11.sa b3sa3.sa elet3.sa \
+                         itub4.sa alup11.sa bbas3.sa cmig4.sa cple6.sa petr4.sa tims3.sa vale3.sa vivt3.sa')
 
     ibovespa = tickers.tickers['^BVSP'].history(period='2y')
     cyrela = tickers.tickers['CYRE3.SA'].history(period='2y')
@@ -25,11 +26,19 @@ def get_acoes():
     brasil_on = tickers.tickers['BBAS3.SA'].history(period="2y")
     sabesp = tickers.tickers['SBSP3.SA'].history(period="2y")
     petro = tickers.tickers['RECV3.SA'].history(period="2y")
-    fii_brcr = tickers.tickers['BRCR11.SA'].history(period="2y")
     petrorio = tickers.tickers['PRIO3.SA'].history(period="2y")
     santander = tickers.tickers['SANB11.SA'].history(period="2y")
     b3 = tickers.tickers['B3SA3.SA'].history(period="2y")
     eletrobras = tickers.tickers['ELET3.SA'].history(period="2y")
+    itau = tickers.tickers['ITUB4.SA'].history(period="2y")
+    alupar = tickers.tickers['ALUP11.SA'].history(period="2y")
+    banco_BB = tickers.tickers['BBAS3.SA'].history(period="2y")
+    cemig = tickers.tickers['CMIG4.SA'].history(period="2y")
+    copel = tickers.tickers['CPLE6.SA'].history(period="2y")
+    petrobras = tickers.tickers['PETR4.SA'].history(period="2y")
+    tim = tickers.tickers['TIMS3.SA'].history(period="2y")
+    vale = tickers.tickers['VALE3.SA'].history(period="2y")
+    vivo = tickers.tickers['VIVT3.SA'].history(period="2y")
 
     # Adicionar uma coluna para identificar cada ação
     ibovespa['Symbol'] = '^BVSP.SA'
@@ -38,14 +47,23 @@ def get_acoes():
     brasil_on['Symbol'] = 'BBAS3.SA'
     sabesp['Symbol'] = 'SBSP3.SA'
     petro['Symbol'] = 'RECV3.SA'
-    fii_brcr['Symbol'] = 'BRCR11.SA'
     petrorio['Symbol'] = 'PRIO3.SA'
     santander['Symbol'] = 'SANB11.SA'
     b3['Symbol'] = 'B3SA3.SA'
     eletrobras['Symbol'] = 'ELET3.SA'
+    itau['Symbol'] = 'ITUB4.SA'
+    alupar['Symbol'] = 'ALUP11.SA'
+    banco_BB['Symbol'] = 'BBAS3.SA'
+    cemig['Symbol'] = 'CMIG4.SA'
+    copel['Symbol'] = 'CPLE6.SA'
+    petrobras['Symbol'] = 'PETR4.SA'
+    tim['Symbol'] = 'TIMS3.SA'
+    vale['Symbol'] = 'VALE3.SA'
+    vivo['Symbol'] = 'VIVT3.SA'
 
     # Concatenar todos os DataFrames
-    dfs = [ibovespa, cyrela, banco_BTGP, brasil_on, sabesp, petro, fii_brcr, petrorio, santander, b3, eletrobras]
+    dfs = [ibovespa, cyrela, banco_BTGP, brasil_on, sabesp, petro, petrorio, santander, b3, 
+           eletrobras, itau, alupar, banco_BB, cemig, copel, petrobras, tim, vale, vivo]
     df_concat = pd.concat(dfs)
     df_concat = df_concat.drop('Stock Splits', axis=1)
 
@@ -79,7 +97,7 @@ class Application:
         
         df['Date'] = pd.to_datetime(df['Date']).dt.date
         # Adiciona o slider para selecionar o intervalo de datas
-        dates = df['Date'].unique() #.dt.strftime('%d/%m/%Y').unique()
+        dates = df['Date'].unique()
 
         self.inicio_data, self.fim_data = st.select_slider(
                                                 "Selecione o intervalo de datas",
@@ -88,7 +106,7 @@ class Application:
                                                 )
         # Filtro por Symbol
         selecao = st.radio('Seleção',
-                                    ['All', 'Plano Inicial', 'Automatização 1'], horizontal=True, index=1)
+                                    ['All', 'Plano Inicial', 'Top5', 'XP'], horizontal=True, index=2)
         
         # Obter os símbolos disponíveis no DataFrame
         simbolos = df['Symbol'].unique()
@@ -97,6 +115,8 @@ class Application:
             default_selecao = []
         elif selecao == 'Plano Inicial':
             default_selecao = ['CYRE3.SA', 'BPAC11.SA', 'BBAS3.SA', 'SBSP3.SA', 'RECV3.SA']
+        elif selecao == 'XP':
+            default_selecao = ['ITUB4.SA', 'ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'PETR4.SA', 'TIMS3.SA', 'VALE3.SA', 'VIVT3.SA']
         else:
             default_selecao = ['SBSP3.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
 
@@ -163,15 +183,15 @@ class Application:
             # Adiciona o cartão fixo para "Fundo Imob"
             with cols[len(filtered_symbols)]:
                 ui.metric_card(
-                    title="Fundo Imob",
-                    content=max_close_symbol['BRCR11.SA'].round(2),
-                    description=f"{last_variation_symbol['BRCR11.SA'].round(2)}% Variação",
+                    title="ITUB4.SA",
+                    content=max_close_symbol['ITUB4.SA'].round(2),
+                    description=f"{last_variation_symbol['ITUB4.SA'].round(2)}% Variação",
                     key="card77"
                 )
 
             # Calcular o valor dinâmico do fechamento com base nos símbolos filtrados
             filtered_variations = last_variation_symbol[filtered_symbols]
-            fechamento_value = last_variation_symbol[filtered_symbols].sum() + last_variation_symbol['BRCR11.SA'] if filtered_symbols else 0
+            fechamento_value = last_variation_symbol[filtered_symbols].sum() + last_variation_symbol['ITUB4.SA'] if filtered_symbols else 0
 
             # Encontrar o símbolo com a maior variação entre os símbolos filtrados
             symbol_max_variation_filtered = filtered_variations.idxmax() if not filtered_variations.empty else "Nenhum destaque"
