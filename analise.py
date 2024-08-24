@@ -116,7 +116,7 @@ class Application:
         elif selecao == 'Plano Inicial':
             default_selecao = ['CYRE3.SA', 'BPAC11.SA', 'BBAS3.SA', 'SBSP3.SA', 'RECV3.SA']
         elif selecao == 'XP':
-            default_selecao = ['ITUB4.SA', 'ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'PETR4.SA', 'TIMS3.SA', 'VALE3.SA', 'VIVT3.SA']
+            default_selecao = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'PETR4.SA', 'TIMS3.SA', 'VALE3.SA', 'VIVT3.SA']
         else:
             default_selecao = ['SBSP3.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
 
