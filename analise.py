@@ -277,11 +277,11 @@ class Application:
             df = df.drop('Dividends', axis=1)
             st.dataframe(df, hide_index=True, column_order=['Date', 'Symbol', 'Open', 'Low', 'Close', 'Variação'])
         with col3:
-            st.markdown(f'Acumulado {{df['Variação'].sum().round(2)}}')
+            acumulado = df['Variação'].sum().round(2)
+            st.markdown(f'Acumulado {acumulado}')
 
             df_symbol_agrupado = df.groupby(['Symbol'])['Variação'].sum()
             st.dataframe(df_symbol_agrupado)
-
 
     def variacao(self):
         if len(self.unique_symbols) > 1:
