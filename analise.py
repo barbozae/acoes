@@ -270,7 +270,9 @@ class Application:
             st.line_chart(self.pivot_df)
         with col2:
             df_dia_agrupado = df.groupby(['Date'])['Variação'].sum().reset_index()
-            st.markdown(f':blue[{(df_dia_agrupado['Variação'] >= 0).sum()}] dias no positivo e *:red[{(df_dia_agrupado['Variação'] < 0).sum()}]* dias negativo')
+            dias_positivos = (df_dia_agrupado['Variação'] >= 0).sum()
+            dias_negativos = (df_dia_agrupado['Variação'] < 0).sum()
+            st.markdown(f':blue[{dias_positivos}] dias no positivo e *:red[{dias_negativos}]* dias negativo')
             
             df = df.sort_values(by='Date', ascending=False)
             df = df.drop('Dividends', axis=1)
