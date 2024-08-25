@@ -263,7 +263,7 @@ class Application:
     def analise_diaria(self):
         df = self.filtered_df.copy()
 
-        col1, col2, col3 = st.columns([1.9, 0.78, 0.32])
+        col1, col2, col3 = st.columns([1.9, 0.78, 0.35])
         with col1:
             # Use st.line_chart para criar o gráfico de linhas
             st.line_chart(self.pivot_df)
