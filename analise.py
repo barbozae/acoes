@@ -67,7 +67,8 @@ def get_acoes():
     df_concat = pd.concat(dfs)
     df_concat = df_concat.drop('Stock Splits', axis=1)
 
-    df_concat['Variação'] = df_concat['Close'].pct_change() * 100
+    df_concat['Variação'] = df_concat['Close'] - df_concat['Open']
+    # df_concat['Variação'] = df_concat['Close'].pct_change() * 100
 
     # Resetar o índice para uma melhor organização
     df_concat.reset_index(inplace=True)
@@ -106,21 +107,20 @@ class Application:
                                                 )
         # Filtro por Symbol
         selecao = st.radio('Seleção',
-                                    ['All', 'Plano Inicial', 'Top5', 'XP'], horizontal=True, index=2)
+                                    ['Top5 + Pessoal', 'Plano Inicial', 'Top5', 'Pessoal'], horizontal=True, index=2)
         
         # Obter os símbolos disponíveis no DataFrame
         simbolos = df['Symbol'].unique()
 
-        if selecao == 'All':
-            default_selecao = []
+        if selecao == 'Top5 + Pessoal':
+            default_selecao = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'PETR4.SA', 'TIMS3.SA', 'VALE3.SA', 'VIVT3.SA',
+                               'SBSP3.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
         elif selecao == 'Plano Inicial':
             default_selecao = ['CYRE3.SA', 'BPAC11.SA', 'BBAS3.SA', 'SBSP3.SA', 'RECV3.SA']
-        elif selecao == 'XP':
-            default_selecao = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'PETR4.SA', 'TIMS3.SA', 'VALE3.SA', 'VIVT3.SA']
+        elif selecao == 'Pessoal':
+            default_selecao = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'PETR4.SA', 'TIMS3.SA', 'VALE3.SA', 'VIVT3.SA', 'ITUB4.SA']
         else:
             default_selecao = ['SBSP3.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
-
-        # st.write(default_selecao)
 
         # Garantir que os valores de selecao estão nas opções disponíveis
         default_selecao = [item for item in default_selecao if item in simbolos]
@@ -205,16 +205,6 @@ class Application:
                     key="card88"
                 )
 
-        
-
-        
-        
-
-
-
-
-
-
         # automatização 1
 
         # cols = st.columns(8)
@@ -272,14 +262,26 @@ class Application:
 
     def analise_diaria(self):
         df = self.filtered_df.copy()
-        col1, col2 = st.columns([1.5, 0.75])
+
+
+        col1, col2, col3 = st.columns([1.9, 0.78, 0.32])
         with col1:
             # Use st.line_chart para criar o gráfico de linhas
             st.line_chart(self.pivot_df)
         with col2:
+            df_dia_agrupado = df.groupby(['Date'])['Variação'].sum().reset_index()
+            st.markdown(f':blue[{(df_dia_agrupado['Variação'] >= 0).sum()}] dias no positivo e *:red[{(df_dia_agrupado['Variação'] < 0).sum()}]* dias negativo')
+            
             df = df.sort_values(by='Date', ascending=False)
             df = df.drop('Dividends', axis=1)
             st.dataframe(df, hide_index=True, column_order=['Date', 'Symbol', 'Open', 'Low', 'Close', 'Variação'])
+        with col3:
+
+            st.markdown(f'Acumulado {df['Variação'].sum().round(2)}')
+
+            df_symbol_agrupado = df.groupby(['Symbol'])['Variação'].sum()
+            st.dataframe(df_symbol_agrupado)
+
 
     def variacao(self):
         if len(self.unique_symbols) > 1:
