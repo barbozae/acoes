@@ -64,15 +64,17 @@ def get_acoes():
     # Concatenar todos os DataFrames
     dfs = [ibovespa, cyrela, banco_BTGP, brasil_on, sabesp, petro, petrorio, santander, b3, 
            eletrobras, itau, alupar, banco_BB, cemig, copel, petrobras, tim, vale, vivo]
-    df_concat = pd.concat(dfs)
-    df_concat = df_concat.drop('Stock Splits', axis=1)
+    df = pd.concat(dfs)
+    df = df.drop('Stock Splits', axis=1)
 
-    df_concat['Variação'] = df_concat['Close'] - df_concat['Open']
+    df['Variação'] = df['Close'] - df['Open']
+
+    df['Rendimento'] = (df['Close'] / df['Open']) - 1
     # df_concat['Variação'] = df_concat['Close'].pct_change() * 100
 
     # Resetar o índice para uma melhor organização
-    df_concat.reset_index(inplace=True)
-    return df_concat
+    df.reset_index(inplace=True)
+    return df
 
 class Application:
     def __init__(self):
@@ -263,7 +265,7 @@ class Application:
     def analise_diaria(self):
         df = self.filtered_df.copy()
 
-        col1, col2, col3 = st.columns([1.9, 0.78, 0.35])
+        col1, col2, col3, col4 = st.columns([1.5, 1, 0.32, 0.38])
         with col1:
             # Use st.line_chart para criar o gráfico de linhas
             st.line_chart(self.pivot_df)
@@ -275,13 +277,41 @@ class Application:
             
             df = df.sort_values(by='Date', ascending=False)
             df = df.drop('Dividends', axis=1)
-            st.dataframe(df, hide_index=True, column_order=['Date', 'Symbol', 'Open', 'Low', 'Close', 'Variação'])
+
+            # Calcular o rendimento para cada linha
+            def calcular_rendimento_linha(linha, df):
+                symbol = linha['Symbol']
+                close_atual = linha['Close']
+                
+                # Filtrar o DataFrame para o mesmo símbolo e buscar a menor data
+                menor_data = df[df['Symbol'] == symbol]['Date'].min()
+                close_menor_data = df[(df['Symbol'] == symbol) & (df['Date'] == menor_data)]['Close'].values[0]
+                
+                # Calcular o rendimento
+                rendimento = ((close_atual - close_menor_data) / close_menor_data * 100).round(2)
+                return rendimento
+            # Aplicar a função para cada linha
+            df['Rendimento'] = df.apply(calcular_rendimento_linha, axis=1, df=df)
+
+            st.dataframe(df, hide_index=True, column_order=['Date', 'Symbol', 'Open', 'Low', 'Close', 'Variação', 'Rendimento'])
+
         with col3:
             acumulado = df['Variação'].sum().round(2)
-            st.markdown(f'Acumulado {acumulado}')
+            st.markdown(f'Variação {acumulado}')
 
             df_symbol_agrupado = df.groupby(['Symbol'])['Variação'].sum()
             st.dataframe(df_symbol_agrupado)
+
+        with col4:
+            ultima_data = df['Date'].max()
+            df_rendimento = df[df['Date'] == ultima_data]
+            df_rendimento = df_rendimento.groupby(['Symbol'])['Rendimento'].sum()
+
+            # a soma foi feita diferente devido df_rendimento ter se tornado uma Series do pandas
+            rendimento_symbol = (df_rendimento[:].sum() / len(df_rendimento[0:])).round(2)
+            st.markdown(f'Rendimento {rendimento_symbol}%')
+
+            st.dataframe(df_rendimento)
 
     def variacao(self):
         if len(self.unique_symbols) > 1:
