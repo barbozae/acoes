@@ -302,7 +302,7 @@ class Application:
 
         # col1, col2 = st.columns([1, 0.5])
         # col1, col2, col3, col4 = st.columns([1.5, 1, 0.32, 0.38])
-        col1, col2, col3 = st.columns([1.1, 0.7, 0.25])
+        col1, col2, col3 = st.columns([1.05, 0.7, 0.25])
         with col1:
             # Use st.line_chart para criar o gráfico de linhas
             st.line_chart(self.pivot_df)
