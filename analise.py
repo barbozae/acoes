@@ -237,7 +237,7 @@ class Application:
             with cols[len(filtered_symbols)]:
                 ui.metric_card(
                     title="Fechamento",
-                    content=fechamento_value.round(2),
+                    content=round(fechamento_value, 2),
                     description=f'Destaque {symbol_max_variation_filtered}',
                     key="card88"
                 )
