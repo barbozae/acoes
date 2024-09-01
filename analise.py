@@ -209,8 +209,8 @@ class Application:
                 with cols[i]:
                     ui.metric_card(
                         title=symbol,
-                        content=max_close_symbol[symbol].round(2),
-                        description=f"{last_variation_symbol[symbol].round(2)}% Variação",
+                        content=round(max_close_symbol[symbol], 2),
+                        description=f"{round(last_variation_symbol[symbol], 2)}% Variação",
                         key=f"card{i+1}"
                     )
 
