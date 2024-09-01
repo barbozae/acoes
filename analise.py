@@ -1,6 +1,8 @@
 import streamlit as st
 import yfinance as yf
+import time as time
 import pandas as pd
+import datetime as datetime
 import streamlit_shadcn_ui as ui
 import altair as alt
 
@@ -15,10 +17,10 @@ st.set_page_config(
         'About': 'Aplicativo desenvolvido por Edson Barboza com objetivo de realizar acompanhamento de ações.'
     })
 
-@st.cache_data(ttl=18000)
+@st.cache_data(ttl=300)
 def get_acoes():
     tickers = yf.Tickers('^bvsp cyre3.sa bpac11.sa bbas3.sa sbsp3.sa recv3.sa brcr11.sa prio3.sa sanb11.sa b3sa3.sa elet3.sa \
-                         itub4.sa alup11.sa bbas3.sa cmig4.sa cple6.sa petr4.sa tims3.sa vale3.sa vivt3.sa')
+                         itub4.sa alup11.sa cmig4.sa cple6.sa petr4.sa tims3.sa vale3.sa vivt3.sa viva3.sa gmat3.sa igti11.sa, suzb3.sa')
 
     ibovespa = tickers.tickers['^BVSP'].history(period='2y')
     cyrela = tickers.tickers['CYRE3.SA'].history(period='2y')
@@ -32,13 +34,16 @@ def get_acoes():
     eletrobras = tickers.tickers['ELET3.SA'].history(period="2y")
     itau = tickers.tickers['ITUB4.SA'].history(period="2y")
     alupar = tickers.tickers['ALUP11.SA'].history(period="2y")
-    banco_BB = tickers.tickers['BBAS3.SA'].history(period="2y")
     cemig = tickers.tickers['CMIG4.SA'].history(period="2y")
     copel = tickers.tickers['CPLE6.SA'].history(period="2y")
     petrobras = tickers.tickers['PETR4.SA'].history(period="2y")
     tim = tickers.tickers['TIMS3.SA'].history(period="2y")
     vale = tickers.tickers['VALE3.SA'].history(period="2y")
     vivo = tickers.tickers['VIVT3.SA'].history(period="2y")
+    vivara = tickers.tickers['VIVA3.SA'].history(period="2y")
+    grupo_matheus = tickers.tickers['GMAT3.SA'].history(period="2y")
+    iguatemi = tickers.tickers['IGTI11.SA'].history(period="2y")
+    suzano = tickers.tickers['SUZB3.SA'].history(period="2y")
 
     # Adicionar uma coluna para identificar cada ação
     ibovespa['Symbol'] = '^BVSP.SA'
@@ -53,23 +58,26 @@ def get_acoes():
     eletrobras['Symbol'] = 'ELET3.SA'
     itau['Symbol'] = 'ITUB4.SA'
     alupar['Symbol'] = 'ALUP11.SA'
-    banco_BB['Symbol'] = 'BBAS3.SA'
     cemig['Symbol'] = 'CMIG4.SA'
     copel['Symbol'] = 'CPLE6.SA'
     petrobras['Symbol'] = 'PETR4.SA'
     tim['Symbol'] = 'TIMS3.SA'
     vale['Symbol'] = 'VALE3.SA'
     vivo['Symbol'] = 'VIVT3.SA'
+    vivara['Symbol'] = 'VIVA3.SA'
+    grupo_matheus['Symbol'] = 'GMAT3.SA'
+    iguatemi['Symbol'] = 'IGTI11.SA'
+    suzano['Symbol'] = 'SUZB3.SA'
 
     # Concatenar todos os DataFrames
     dfs = [ibovespa, cyrela, banco_BTGP, brasil_on, sabesp, petro, petrorio, santander, b3, 
-           eletrobras, itau, alupar, banco_BB, cemig, copel, petrobras, tim, vale, vivo]
+           eletrobras, itau, alupar, cemig, copel, petrobras, tim, vale, vivo, vivara, grupo_matheus, iguatemi, suzano]
     df = pd.concat(dfs)
     df = df.drop('Stock Splits', axis=1)
 
     df['Variação'] = df['Close'] - df['Open']
 
-    df['Rendimento'] = (df['Close'] / df['Open']) - 1
+    # df['Rendimento'] = (df['Close'] / df['Open']) - 1
     # df_concat['Variação'] = df_concat['Close'].pct_change() * 100
 
     # Resetar o índice para uma melhor organização
@@ -84,14 +92,16 @@ class Application:
         self.navegacao()
         
     def navegacao(self):
-        tab1, tab2, tab3, tab4 = st.tabs(['Análise diária', 'Variação %', 'Volume', 'Dividendo'])
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(['Análise diária', 'Crescimento', 'Variação %', 'Volume', 'Dividendo'])
         with tab1:
             self.analise_diaria()
         with tab2:
-            self.variacao()
+            self.rendimento()
         with tab3:
-            self.volume()
+            self.variacao()
         with tab4:
+            self.volume()
+        with tab5:
             self.dividendo()
 
     def display_data(self):
@@ -100,16 +110,36 @@ class Application:
         
         df['Date'] = pd.to_datetime(df['Date']).dt.date
         # Adiciona o slider para selecionar o intervalo de datas
-        dates = df['Date'].unique()
+        # dates = df['Date'].unique()
 
-        self.inicio_data, self.fim_data = st.select_slider(
-                                                "Selecione o intervalo de datas",
-                                                options=dates,
-                                                value=(dates.min(), dates.max())
-                                                )
+        # self.inicio_data, self.fim_data = st.select_slider(
+        #                                         "Selecione o intervalo de datas",
+        #                                         options=dates,
+        #                                         value=(dates.min(), dates.max())
+        #                                         )
+        
+        # datas que inicia o sistema
+        tempo = time.time()
+        tempo_local = time.localtime(tempo)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            self.inicio_data = st.date_input(
+                'Data inicial', 
+                datetime.date(tempo_local[0], tempo_local[1], 1), format='DD/MM/YYYY') 
+        with col2:
+            self.fim_data = st.date_input(
+                    'Data final', 
+                    datetime.date.today(), format='DD/MM/YYYY')
+
+
+
+
+
+
         # Filtro por Symbol
         selecao = st.radio('Seleção',
-                                    ['Top5 + Pessoal', 'Plano Inicial', 'Top5', 'Pessoal'], horizontal=True, index=2)
+                                    ['Top5 + Pessoal', 'Acompanhando', 'Top5', 'Pessoal'], horizontal=True, index=2)
         
         # Obter os símbolos disponíveis no DataFrame
         simbolos = df['Symbol'].unique()
@@ -117,10 +147,11 @@ class Application:
         if selecao == 'Top5 + Pessoal':
             default_selecao = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'PETR4.SA', 'TIMS3.SA', 'VALE3.SA', 'VIVT3.SA',
                                'SBSP3.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
-        elif selecao == 'Plano Inicial':
-            default_selecao = ['CYRE3.SA', 'BPAC11.SA', 'BBAS3.SA', 'SBSP3.SA', 'RECV3.SA']
+        elif selecao == 'Acompanhando':
+            # default_selecao = ['CYRE3.SA', 'BPAC11.SA', 'BBAS3.SA', 'SBSP3.SA', 'RECV3.SA'] # PRIMEIRAS AÇÕES COM O TOP5 DA ITAU
+            default_selecao = ['PETR4.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA']
         elif selecao == 'Pessoal':
-            default_selecao = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'PETR4.SA', 'TIMS3.SA', 'VALE3.SA', 'VIVT3.SA', 'ITUB4.SA']
+            default_selecao = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'VIVT3.SA', 'ITUB4.SA', 'VIVA3.SA']
         else:
             default_selecao = ['SBSP3.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
 
@@ -150,7 +181,7 @@ class Application:
 
         # Ordene o DataFrame pelo índice 'Date'
         self.pivot_df = self.pivot_df.sort_values(by='Date')
-
+        
     def card(self):
         df = get_acoes()
         df['Date'] = pd.to_datetime(df['Date']).dt.date
@@ -172,7 +203,8 @@ class Application:
             filtered_symbols = [symbol for symbol in self.select_symbol if symbol in max_close_symbol.index]
 
             # Criar o número correto de colunas
-            cols = st.columns(len(filtered_symbols) + 2)  # Adiciona mais duas colunas para os cartões fixos
+            # cols = st.columns(len(filtered_symbols) + 2)  # Adiciona mais duas colunas para os cartões fixos
+            cols = st.columns(len(filtered_symbols) + 1)
             for i, symbol in enumerate(filtered_symbols):
                 with cols[i]:
                     ui.metric_card(
@@ -183,23 +215,26 @@ class Application:
                     )
 
             # Adiciona o cartão fixo para "Fundo Imob"
-            with cols[len(filtered_symbols)]:
-                ui.metric_card(
-                    title="ITUB4.SA",
-                    content=max_close_symbol['ITUB4.SA'].round(2),
-                    description=f"{last_variation_symbol['ITUB4.SA'].round(2)}% Variação",
-                    key="card77"
-                )
+            # with cols[len(filtered_symbols)]:
+            #     ui.metric_card(
+            #         title="ITUB4.SA",
+            #         content=max_close_symbol['ITUB4.SA'].round(2),
+            #         description=f"{last_variation_symbol['ITUB4.SA'].round(2)}% Variação",
+            #         key="card77"
+            #     )
 
             # Calcular o valor dinâmico do fechamento com base nos símbolos filtrados
             filtered_variations = last_variation_symbol[filtered_symbols]
-            fechamento_value = last_variation_symbol[filtered_symbols].sum() + last_variation_symbol['ITUB4.SA'] if filtered_symbols else 0
+            # a linha abaixo deixava ações da ITUB fixa
+            # fechamento_value = last_variation_symbol[filtered_symbols].sum() + last_variation_symbol['ITUB4.SA'] if filtered_symbols else 0
+            fechamento_value = last_variation_symbol[filtered_symbols].sum() if filtered_symbols else 0
 
             # Encontrar o símbolo com a maior variação entre os símbolos filtrados
             symbol_max_variation_filtered = filtered_variations.idxmax() if not filtered_variations.empty else "Nenhum destaque"
 
             # Adiciona o cartão dinâmico para "Fechamento"
-            with cols[len(filtered_symbols) + 1]:
+            # with cols[len(filtered_symbols) + 1]:
+            with cols[len(filtered_symbols)]:
                 ui.metric_card(
                     title="Fechamento",
                     content=fechamento_value.round(2),
@@ -263,20 +298,23 @@ class Application:
         #                    key="card8")
 
     def analise_diaria(self):
-        df = self.filtered_df.copy()
+        self.table_geral = self.filtered_df.copy()
 
-        col1, col2, col3, col4 = st.columns([1.5, 1, 0.32, 0.38])
+        # col1, col2 = st.columns([1, 0.5])
+        # col1, col2, col3, col4 = st.columns([1.5, 1, 0.32, 0.38])
+        col1, col2, col3 = st.columns([1.7, 0.9, 0.3])
         with col1:
             # Use st.line_chart para criar o gráfico de linhas
             st.line_chart(self.pivot_df)
+
         with col2:
-            df_dia_agrupado = df.groupby(['Date'])['Variação'].sum().reset_index()
+            df_dia_agrupado = self.table_geral.groupby(['Date'])['Variação'].sum().reset_index()
             dias_positivos = (df_dia_agrupado['Variação'] >= 0).sum()
             dias_negativos = (df_dia_agrupado['Variação'] < 0).sum()
             st.markdown(f':blue[{dias_positivos}] dias no positivo e *:red[{dias_negativos}]* dias negativo')
             
-            df = df.sort_values(by='Date', ascending=False)
-            df = df.drop('Dividends', axis=1)
+            self.table_geral = self.table_geral.sort_values(by='Date', ascending=False)
+            self.table_geral = self.table_geral.drop('Dividends', axis=1)
 
             # Calcular o rendimento para cada linha
             def calcular_rendimento_linha(linha, df):
@@ -291,27 +329,27 @@ class Application:
                 rendimento = ((close_atual - close_menor_data) / close_menor_data * 100).round(2)
                 return rendimento
             # Aplicar a função para cada linha
-            df['Rendimento'] = df.apply(calcular_rendimento_linha, axis=1, df=df)
+            self.table_geral['Rendimento'] = self.table_geral.apply(calcular_rendimento_linha, axis=1, df=self.table_geral)
 
-            st.dataframe(df, hide_index=True, column_order=['Date', 'Symbol', 'Open', 'Low', 'Close', 'Variação', 'Rendimento'])
+            st.dataframe(self.table_geral, hide_index=True, column_order=['Date', 'Symbol', 'Open', 'Low', 'Close', 'Variação', 'Rendimento'])
 
         with col3:
-            acumulado = df['Variação'].sum().round(2)
+            acumulado = self.table_geral['Variação'].sum().round(2)
             st.markdown(f'Variação {acumulado}')
 
-            df_symbol_agrupado = df.groupby(['Symbol'])['Variação'].sum()
+            df_symbol_agrupado = self.table_geral.groupby(['Symbol'])['Variação'].sum()
             st.dataframe(df_symbol_agrupado)
 
-        with col4:
-            ultima_data = df['Date'].max()
-            df_rendimento = df[df['Date'] == ultima_data]
-            df_rendimento = df_rendimento.groupby(['Symbol'])['Rendimento'].sum()
+        # with col4:
+        #     ultima_data = self.table_geral['Date'].max()
+        #     df_rendimento = self.table_geral[self.table_geral['Date'] == ultima_data]
+        #     df_rendimento = df_rendimento.groupby(['Symbol'])['Rendimento'].sum()
 
-            # a soma foi feita diferente devido df_rendimento ter se tornado uma Series do pandas
-            rendimento_symbol = (df_rendimento[:].sum() / len(df_rendimento[0:])).round(2)
-            st.markdown(f'Rendimento {rendimento_symbol}%')
+        #     # a soma foi feita diferente devido df_rendimento ter se tornado uma Series do pandas
+        #     rendimento_symbol = (df_rendimento[:].sum() / len(df_rendimento[0:])).round(2)
+        #     st.markdown(f'Crescimento {rendimento_symbol}%')
 
-            st.dataframe(df_rendimento)
+        #     st.dataframe(df_rendimento)
 
     def variacao(self):
         if len(self.unique_symbols) > 1:
@@ -339,7 +377,7 @@ class Application:
         variação_symbol = variação_symbol.sum(axis=0)
         st.line_chart(variação_symbol, color='#39FF14')
 
-        # NÃO ESTOU UTILIZANDO ESSE GRÁFICO
+
         def grafico_com_altair():
             df = self.filtered_df.copy()
 
@@ -419,6 +457,46 @@ class Application:
 
         # # Exibir o gráfico no Streamlit
         # st.altair_chart(chart, use_container_width=True)
+
+    def rendimento(self):
+        df = self.filtered_df.copy()
+        col1, col2 = st.columns([1.75, 0.25])
+        # col1, col2, col3 = st.columns([2.4, 0.33, 0.38])
+        with col1:
+            crescimento = self.table_geral.groupby(['Date'])['Rendimento'].mean()
+            st.line_chart(crescimento)
+                    
+        # with col2:
+            # Calcular o rendimento para cada linha
+            def calcular_rendimento_linha(linha, df):
+                symbol = linha['Symbol']
+                close_atual = linha['Close']
+                
+                # Filtrar o DataFrame para o mesmo símbolo e buscar a menor data
+                menor_data = df[df['Symbol'] == symbol]['Date'].min()
+                close_menor_data = df[(df['Symbol'] == symbol) & (df['Date'] == menor_data)]['Close'].values[0]
+                
+                # Calcular o rendimento
+                rendimento = ((close_atual - close_menor_data) / close_menor_data * 100).round(2)
+                return rendimento
+            # Aplicar a função para cada linha
+            df['Rendimento'] = df.apply(calcular_rendimento_linha, axis=1, df=df)
+            # acumulado = df['Variação'].sum().round(2)
+            # st.markdown(f'Variação {acumulado}')
+
+            # df_symbol_agrupado = df.groupby(['Symbol'])['Variação'].sum()
+            # st.dataframe(df_symbol_agrupado)
+
+        with col2:
+            ultima_data = df['Date'].max()
+            df_rendimento = df[df['Date'] == ultima_data]
+            df_rendimento = df_rendimento.groupby(['Symbol'])['Rendimento'].sum()
+
+            # a soma foi feita diferente devido df_rendimento ter se tornado uma Series do pandas
+            rendimento_symbol = (df_rendimento[:].sum() / len(df_rendimento[0:])).round(2)
+            st.markdown(f'Crescimento {rendimento_symbol}%')
+
+            st.dataframe(df_rendimento)
 
 
 if __name__ == "__main__":
