@@ -435,7 +435,7 @@ class Application:
         df = self.filtered_df
         df = df.drop(['Open', 'High', 'Low', 'Close', 'Volume', 'Variação'], axis=1)
         df = df[df['Dividends'] > 0]
-        df
+        
         cols = st.columns([1.75, 0.25])
         with cols[0]:
             st.bar_chart(data=df, x='Date', y='Dividends', color='Symbol', height=400, use_container_width=True)
