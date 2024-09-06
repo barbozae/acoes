@@ -19,14 +19,14 @@ st.set_page_config(
 
 @st.cache_data(ttl=300)
 def get_acoes():
-    tickers = yf.Tickers('^bvsp cyre3.sa bpac11.sa bbas3.sa sbsp3.sa recv3.sa brcr11.sa prio3.sa sanb11.sa b3sa3.sa elet3.sa \
+    tickers = yf.Tickers('^bvsp cyre3.sa bpac11.sa bbas3.sa eqtl3.sa recv3.sa brcr11.sa prio3.sa sanb11.sa b3sa3.sa elet3.sa \
                          itub4.sa alup11.sa cmig4.sa cple6.sa petr4.sa tims3.sa vale3.sa vivt3.sa viva3.sa gmat3.sa igti11.sa, suzb3.sa')
 
     ibovespa = tickers.tickers['^BVSP'].history(period='2y')
     cyrela = tickers.tickers['CYRE3.SA'].history(period='2y')
     banco_BTGP = tickers.tickers['BPAC11.SA'].history(period="2y")
     brasil_on = tickers.tickers['BBAS3.SA'].history(period="2y")
-    sabesp = tickers.tickers['SBSP3.SA'].history(period="2y")
+    equatorial = tickers.tickers['EQTL3.SA'].history(period="2y")
     petro = tickers.tickers['RECV3.SA'].history(period="2y")
     petrorio = tickers.tickers['PRIO3.SA'].history(period="2y")
     santander = tickers.tickers['SANB11.SA'].history(period="2y")
@@ -50,7 +50,7 @@ def get_acoes():
     cyrela['Symbol'] = 'CYRE3.SA'
     banco_BTGP['Symbol'] = 'BPAC11.SA'
     brasil_on['Symbol'] = 'BBAS3.SA'
-    sabesp['Symbol'] = 'SBSP3.SA'
+    equatorial['Symbol'] = 'EQTL3.SA'
     petro['Symbol'] = 'RECV3.SA'
     petrorio['Symbol'] = 'PRIO3.SA'
     santander['Symbol'] = 'SANB11.SA'
@@ -70,7 +70,7 @@ def get_acoes():
     suzano['Symbol'] = 'SUZB3.SA'
 
     # Concatenar todos os DataFrames
-    dfs = [ibovespa, cyrela, banco_BTGP, brasil_on, sabesp, petro, petrorio, santander, b3, 
+    dfs = [ibovespa, cyrela, banco_BTGP, brasil_on, equatorial, petro, petrorio, santander, b3, 
            eletrobras, itau, alupar, cemig, copel, petrobras, tim, vale, vivo, vivara, grupo_matheus, iguatemi, suzano]
     df = pd.concat(dfs)
     df = df.drop('Stock Splits', axis=1)
@@ -132,11 +132,6 @@ class Application:
                     'Data final', 
                     datetime.date.today(), format='DD/MM/YYYY')
 
-
-
-
-
-
         # Filtro por Symbol
         selecao = st.radio('Seleção',
                                     ['Top5 + Pessoal', 'Acompanhando', 'Top5', 'Pessoal'], horizontal=True, index=2)
@@ -153,7 +148,7 @@ class Application:
         elif selecao == 'Pessoal':
             default_selecao = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'VIVT3.SA', 'ITUB4.SA', 'VIVA3.SA']
         else:
-            default_selecao = ['SBSP3.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
+            default_selecao = ['EQTL3.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
 
         # Garantir que os valores de selecao estão nas opções disponíveis
         default_selecao = [item for item in default_selecao if item in simbolos]
@@ -302,7 +297,7 @@ class Application:
 
         # col1, col2 = st.columns([1, 0.5])
         # col1, col2, col3, col4 = st.columns([1.5, 1, 0.32, 0.38])
-        col1, col2, col3 = st.columns([1, 0.75, 0.25])
+        col1, col2, col3 = st.columns([1.25, 0.7, 0.25])
         with col1:
             # Use st.line_chart para criar o gráfico de linhas
             st.line_chart(self.pivot_df)
