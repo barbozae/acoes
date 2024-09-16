@@ -6,7 +6,11 @@ import datetime as datetime
 import streamlit_shadcn_ui as ui
 import altair as alt
 
-#TODO Inserir todas as seleções em dividendos
+import requests
+import zipfile
+from io import BytesIO
+
+
 st.set_page_config(
     page_title="Investimentos",
     page_icon="💲",
@@ -84,6 +88,46 @@ def get_acoes():
     df.reset_index(inplace=True)
     return df
 
+@st.cache_data(ttl=300)
+def get_fundos():
+    ano = "2024"
+    # Criar uma lista para armazenar os DataFrames de cada mês
+    dados_completos = []
+    # Loop para iterar sobre todos os meses do ano
+    for mes in range(1, 13):
+        # Formatar o mês com dois dígitos (ex: '01', '02', ...)
+        mes_formatado = f"{mes:02d}"
+        # Criar a URL para o mês correspondente
+        url = f'https://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/inf_diario_fi_{ano}{mes_formatado}.zip'
+        print(f"Baixando dados do mês: {mes_formatado}/{ano}")
+        # Fazer o download do arquivo ZIP
+        download = requests.get(url)
+        # Verificar se o download foi bem-sucedido
+        if download.status_code == 200:
+            # Abrir o arquivo ZIP a partir do conteúdo baixado
+            arquivo_zip = zipfile.ZipFile(BytesIO(download.content))
+            
+            # Ler o arquivo CSV dentro do ZIP
+            dados_fundos = pd.read_csv(arquivo_zip.open(arquivo_zip.namelist()[0]), sep=";", encoding='ISO-8859-1', low_memory=False)
+            
+            # Adicionar os dados do mês ao DataFrame completo
+            dados_completos.append(dados_fundos)
+        else:
+            print(f"Erro ao baixar dados para {mes_formatado}/{ano}")
+
+    # Concatenar todos os DataFrames em um único DataFrame
+    df_fundos = pd.concat(dados_completos, ignore_index=True)
+    dados_fundos.drop(['RESG_DIA', 'CAPTC_DIA'], axis=1)
+    return df_fundos
+
+@st.cache_data(ttl=300)
+def get_name_fundos():
+    df_name_fundos = pd.read_csv('https://dados.cvm.gov.br/dados/FI/CAD/DADOS/cad_fi.csv', 
+                             sep = ";", encoding = 'ISO-8859-1')
+    df_name_fundos = df_name_fundos[['CNPJ_FUNDO', 'DENOM_SOCIAL']]
+    df_name_fundos = df_name_fundos.drop_duplicates()
+    return df_name_fundos
+
 class Application:
     def __init__(self):
         self.df = get_acoes()
@@ -105,7 +149,29 @@ class Application:
             self.dividendo()
 
     def display_data(self):
-        df = get_acoes()
+        df_acoes = get_acoes()
+        df_acoes['Date'] = pd.to_datetime(df_acoes['Date']).dt.date
+        df_fundos = get_fundos()
+        df_name_fundos = get_name_fundos()
+
+        base_fundos = pd.merge(df_fundos, df_name_fundos, how = "left", 
+                            left_on = ["CNPJ_FUNDO"], right_on = ["CNPJ_FUNDO"])
+
+        base_fundos = base_fundos[['CNPJ_FUNDO', 'DENOM_SOCIAL', 'DT_COMPTC', 'VL_QUOTA', 'VL_PATRIM_LIQ', 'NR_COTST']]
+        base_multimercado = base_fundos.rename(columns={'DENOM_SOCIAL': 'Symbol', 'DT_COMPTC': 'Date', 'VL_QUOTA': 'Close'})
+
+        # base_multimercado = base_multimercado[base_multimercado['Symbol'].str.contains("ARMOR AXE FI|ABSOLUTE HIDRACDI", na = False)]
+        base_multimercado = base_multimercado[base_multimercado['Symbol'].str.contains("ARMOR AXE FI|ABSOLUTE HIDRA CDI FI EM COTAS DE FUNDOS INCE|ITAÚ AÇÕES BDR NÍVEL I FUNDO DE INV", na = False)]
+
+        # Substituir os valores na coluna 'nome_fundo'
+        base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ARMOR AXE FI EM COTAS DE FUNDOS DE INVESTIMENTO MULTIMERCADO', 'ARMOR AXE')
+        base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ABSOLUTE HIDRA CDI FI EM COTAS DE FUNDOS INCENTIVADOS DE INVEST EM INFRA RENDA FIXA CRÉDITO PRIVADO', 'ABSOLUTE HIDRA')
+        base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ITAÚ AÇÕES BDR NÍVEL I FUNDO DE INVESTIMENTO EM COTAS DE FUNDOS DE INVESTIMENTO', 'ITAÚ FUNDOS')
+
+
+        # Concatenando os DataFrames verticalmente
+        df = pd.concat([df_acoes, base_multimercado], ignore_index=True)
+
         st.title('👨🏻‍💼 Análise Carteira de Ações')
         
         df['Date'] = pd.to_datetime(df['Date']).dt.date
@@ -134,19 +200,21 @@ class Application:
 
         # Filtro por Symbol
         selecao = st.radio('Seleção',
-                                    ['Top5 + Pessoal', 'Acompanhando', 'Top5', 'Pessoal'], horizontal=True, index=2)
+                                    ['Top5 + Minhas Ações', 'Acompanhando', 'Top5', 'Minhas Ações', 'MultiMercado'], horizontal=True, index=2)
         
         # Obter os símbolos disponíveis no DataFrame
         simbolos = df['Symbol'].unique()
 
-        if selecao == 'Top5 + Pessoal':
+        if selecao == 'Top5 + Minhas Ações':
             default_selecao = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'PETR4.SA', 'TIMS3.SA', 'VALE3.SA', 'VIVT3.SA',
                                'SBSP3.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
         elif selecao == 'Acompanhando':
             # default_selecao = ['CYRE3.SA', 'BPAC11.SA', 'BBAS3.SA', 'SBSP3.SA', 'RECV3.SA'] # PRIMEIRAS AÇÕES COM O TOP5 DA ITAU
             default_selecao = ['PETR4.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA']
-        elif selecao == 'Pessoal':
+        elif selecao == 'Minhas Ações':
             default_selecao = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'VIVT3.SA', 'ITUB4.SA', 'VIVA3.SA']
+        elif selecao == 'MultiMercado':
+            default_selecao = ['ARMOR AXE', 'ABSOLUTE HIDRA', 'ITAÚ FUNDOS']
         else:
             default_selecao = ['EQTL3.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
 
@@ -294,6 +362,7 @@ class Application:
 
     def analise_diaria(self):
         self.table_geral = self.filtered_df.copy()
+
 
         # col1, col2 = st.columns([1, 0.5])
         # col1, col2, col3, col4 = st.columns([1.5, 1, 0.32, 0.38])
