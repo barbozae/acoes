@@ -117,7 +117,7 @@ def get_fundos():
 
     # Concatenar todos os DataFrames em um único DataFrame
     df_fundos = pd.concat(dados_completos, ignore_index=True)
-    dados_fundos.drop(['RESG_DIA', 'CAPTC_DIA'], axis=1)
+    dados_fundos = dados_fundos.drop(['RESG_DIA', 'CAPTC_DIA'], axis=1)
     return df_fundos
 
 @st.cache_data(ttl=300)
