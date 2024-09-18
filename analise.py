@@ -109,6 +109,9 @@ def get_fundos():
             
             # Ler o arquivo CSV dentro do ZIP
             dados_fundos = pd.read_csv(arquivo_zip.open(arquivo_zip.namelist()[0]), sep=";", encoding='ISO-8859-1', low_memory=False)
+
+            # reduzindo o tamanho da tabela
+            dados_fundos = dados_fundos[dados_fundos['CNPJ_FUNDO'].str.contains("20.147.389/0001-00|34.172.497/0001-47|47.612.737/0001-29", na = False)]
             
             # Adicionar os dados do mês ao DataFrame completo
             dados_completos.append(dados_fundos)
