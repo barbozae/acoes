@@ -21,7 +21,7 @@ st.set_page_config(
         'About': 'Aplicativo desenvolvido por Edson Barboza com objetivo de realizar acompanhamento de ações.'
     })
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=900)
 def get_acoes():
     tickers = yf.Tickers('^bvsp cyre3.sa bpac11.sa bbas3.sa eqtl3.sa recv3.sa brcr11.sa prio3.sa sanb11.sa b3sa3.sa elet3.sa \
                          itub4.sa alup11.sa cmig4.sa cple6.sa petr4.sa tims3.sa vale3.sa vivt3.sa viva3.sa gmat3.sa igti11.sa, suzb3.sa')
@@ -88,7 +88,7 @@ def get_acoes():
     df.reset_index(inplace=True)
     return df
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=900)
 def get_fundos():
     ano = "2024"
     # Criar uma lista para armazenar os DataFrames de cada mês
@@ -109,21 +109,18 @@ def get_fundos():
             
             # Ler o arquivo CSV dentro do ZIP
             dados_fundos = pd.read_csv(arquivo_zip.open(arquivo_zip.namelist()[0]), sep=";", encoding='ISO-8859-1', low_memory=False)
-
             # reduzindo o tamanho da tabela
             dados_fundos = dados_fundos[dados_fundos['CNPJ_FUNDO'].str.contains("20.147.389/0001-00|34.172.497/0001-47|47.612.737/0001-29", na = False)]
-            
             # Adicionar os dados do mês ao DataFrame completo
             dados_completos.append(dados_fundos)
         else:
             print(f"Erro ao baixar dados para {mes_formatado}/{ano}")
-
     # Concatenar todos os DataFrames em um único DataFrame
     df_fundos = pd.concat(dados_completos, ignore_index=True)
     dados_fundos = dados_fundos.drop(['RESG_DIA', 'CAPTC_DIA'], axis=1)
     return df_fundos
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=900)
 def get_name_fundos():
     df_name_fundos = pd.read_csv('https://dados.cvm.gov.br/dados/FI/CAD/DADOS/cad_fi.csv', 
                              sep = ";", encoding = 'ISO-8859-1')
@@ -159,18 +156,15 @@ class Application:
 
         base_fundos = pd.merge(df_fundos, df_name_fundos, how = "left", 
                             left_on = ["CNPJ_FUNDO"], right_on = ["CNPJ_FUNDO"])
-
         base_fundos = base_fundos[['CNPJ_FUNDO', 'DENOM_SOCIAL', 'DT_COMPTC', 'VL_QUOTA', 'VL_PATRIM_LIQ', 'NR_COTST']]
         base_multimercado = base_fundos.rename(columns={'DENOM_SOCIAL': 'Symbol', 'DT_COMPTC': 'Date', 'VL_QUOTA': 'Close'})
 
         # base_multimercado = base_multimercado[base_multimercado['Symbol'].str.contains("ARMOR AXE FI|ABSOLUTE HIDRACDI", na = False)]
-        base_multimercado = base_multimercado[base_multimercado['Symbol'].str.contains("ARMOR AXE FI|ABSOLUTE HIDRA CDI FI EM COTAS DE FUNDOS INCE|ITAÚ AÇÕES BDR NÍVEL I FUNDO DE INV", na = False)]
-
+    
         # Substituir os valores na coluna 'nome_fundo'
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ARMOR AXE FI EM COTAS DE FUNDOS DE INVESTIMENTO MULTIMERCADO', 'ARMOR AXE')
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ABSOLUTE HIDRA CDI FI EM COTAS DE FUNDOS INCENTIVADOS DE INVEST EM INFRA RENDA FIXA CRÉDITO PRIVADO', 'ABSOLUTE HIDRA')
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ITAÚ AÇÕES BDR NÍVEL I FUNDO DE INVESTIMENTO EM COTAS DE FUNDOS DE INVESTIMENTO', 'ITAÚ FUNDOS')
-
 
         # Concatenando os DataFrames verticalmente
         df = pd.concat([df_acoes, base_multimercado], ignore_index=True)
@@ -234,7 +228,6 @@ class Application:
         # Filtra o DataFrame com base no intervalo de datas selecionado
         mask = (df['Date'] >= self.inicio_data) & (df['Date'] <= self.fim_data)
         self.filtered_df = df.loc[mask]
-
         # Verifique quantos símbolos únicos estão presentes no DataFrame filtrado
         self.unique_symbols = self.filtered_df['Symbol'].unique()
 
@@ -527,32 +520,48 @@ class Application:
 
     def rendimento(self):
         df = self.filtered_df.copy()
-        col1, col2 = st.columns([1.75, 0.25])
+        col1, col2 = st.columns([1.7, 0.28])
         # col1, col2, col3 = st.columns([2.4, 0.33, 0.38])
         with col1:
             crescimento = self.table_geral.groupby(['Date'])['Rendimento'].mean()
-            st.line_chart(crescimento)
-                    
-        # with col2:
+            st.write('Rendimento diário do Período')
+            st.line_chart(crescimento, color='#FFBF00')
+
+            if len(self.unique_symbols) > 1:
+            # Se houver mais de um símbolo, use pivot_table para reestruturar o DataFrame
+                pivot_df_variacao = self.table_geral.pivot_table(index='Date', columns='Symbol', values='Rendimento')
+            else:
+                # Se houver apenas um símbolo, mantenha o DataFrame como está
+                pivot_df_variacao = self.table_geral.set_index('Date')[['Rendimento']]
+
+            # Ordene o DataFrame pelo índice 'Date'
+            pivot_df_variacao = pivot_df_variacao.sort_values(by='Date')
+            
+            # Calculate the rolling mean with a window of 30 days
+            pivot_df_variacao['Média Móvel'] = pivot_df_variacao.mean(axis=1).rolling(window=30).mean()
+            pivot_df_variacao['Linha 0'] = 0
+            st.write('Rendimento diário por Symbol')
+            st.line_chart(pivot_df_variacao)
+
+            st.write('Rendimento acumulada por Symbol')
+            rendimento_symbol = pivot_df_variacao.drop(['Média Móvel', 'Linha 0'], axis=1)
+            # rendimento_symbol = rendimento_symbol.mean(axis=0)
+            rendimento_symbol = rendimento_symbol.iloc[-1]
+            st.line_chart(rendimento_symbol, color='#39FF14')
+
             # Calcular o rendimento para cada linha
             def calcular_rendimento_linha(linha, df):
                 symbol = linha['Symbol']
                 close_atual = linha['Close']
-                
                 # Filtrar o DataFrame para o mesmo símbolo e buscar a menor data
                 menor_data = df[df['Symbol'] == symbol]['Date'].min()
                 close_menor_data = df[(df['Symbol'] == symbol) & (df['Date'] == menor_data)]['Close'].values[0]
-                
                 # Calcular o rendimento
                 rendimento = ((close_atual - close_menor_data) / close_menor_data * 100).round(2)
                 return rendimento
+            
             # Aplicar a função para cada linha
             df['Rendimento'] = df.apply(calcular_rendimento_linha, axis=1, df=df)
-            # acumulado = df['Variação'].sum().round(2)
-            # st.markdown(f'Variação {acumulado}')
-
-            # df_symbol_agrupado = df.groupby(['Symbol'])['Variação'].sum()
-            # st.dataframe(df_symbol_agrupado)
 
         with col2:
             ultima_data = df['Date'].max()
@@ -562,7 +571,6 @@ class Application:
             # a soma foi feita diferente devido df_rendimento ter se tornado uma Series do pandas
             rendimento_symbol = (df_rendimento[:].sum() / len(df_rendimento[0:])).round(2)
             st.markdown(f'Crescimento {rendimento_symbol}%')
-
             st.dataframe(df_rendimento)
 
 
