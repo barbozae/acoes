@@ -128,6 +128,27 @@ def get_name_fundos():
     df_name_fundos = df_name_fundos.drop_duplicates()
     return df_name_fundos
 
+@st.cache_data(ttl=900)
+def get_cdi():
+    # site para consultar o codigo para tipo de consulta
+    # https://www3.bcb.gov.br/sgspub/localizarseries/localizarSeries.do?method=prepararTelaLocalizarSeries
+    #taxa selic 12, cdi 4398
+
+    url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial=01/01/2023&dataFinal=31/12/2024"
+    response = requests.get(url)
+    dados = response.json()
+    # Converter para DataFrame
+    df_cdi = pd.DataFrame(dados)
+    # Converter a coluna 'data' para o tipo datetime
+    df_cdi['data'] = pd.to_datetime(df_cdi['data'], format='%d/%m/%Y')
+    # Converter a coluna 'valor' para o tipo float
+    df_cdi['valor'] = df_cdi['valor'].astype(float)
+    # Calculando a variação percentual dia a dia
+    df_cdi = df_cdi.rename(columns={'valor': 'Close', 'data': 'Date'})
+    df_cdi['Symbol'] = df_cdi['Symbol'] = 'CDI'
+    return df_cdi
+
+
 class Application:
     def __init__(self):
         self.df = get_acoes()
@@ -153,11 +174,16 @@ class Application:
         df_acoes['Date'] = pd.to_datetime(df_acoes['Date']).dt.date
         df_fundos = get_fundos()
         df_name_fundos = get_name_fundos()
+        df_cdi = get_cdi()
+        # df_cdi['Rendimento'] = df_cdi['Close'].cumsum()
 
         base_fundos = pd.merge(df_fundos, df_name_fundos, how = "left", 
                             left_on = ["CNPJ_FUNDO"], right_on = ["CNPJ_FUNDO"])
         base_fundos = base_fundos[['CNPJ_FUNDO', 'DENOM_SOCIAL', 'DT_COMPTC', 'VL_QUOTA', 'VL_PATRIM_LIQ', 'NR_COTST']]
         base_multimercado = base_fundos.rename(columns={'DENOM_SOCIAL': 'Symbol', 'DT_COMPTC': 'Date', 'VL_QUOTA': 'Close'})
+
+        # Concatenar base_multimercado e df_cdi
+        base_multimercado = pd.concat([base_multimercado, df_cdi], ignore_index=True)
 
         # base_multimercado = base_multimercado[base_multimercado['Symbol'].str.contains("ARMOR AXE FI|ABSOLUTE HIDRACDI", na = False)]
     
@@ -380,13 +406,19 @@ class Application:
             def calcular_rendimento_linha(linha, df):
                 symbol = linha['Symbol']
                 close_atual = linha['Close']
+                data_atual = linha['Date']
                 
-                # Filtrar o DataFrame para o mesmo símbolo e buscar a menor data
-                menor_data = df[df['Symbol'] == symbol]['Date'].min()
-                close_menor_data = df[(df['Symbol'] == symbol) & (df['Date'] == menor_data)]['Close'].values[0]
-                
-                # Calcular o rendimento
-                rendimento = ((close_atual - close_menor_data) / close_menor_data * 100).round(2)
+                if symbol == 'CDI':
+                    # rendimento = df[df['Symbol'] == 'CDI']['Close'].cumsum().iloc[-1]
+                    # Filtrar o DataFrame para o CDI até a data atual
+                    rendimento = df[(df['Symbol'] == 'CDI') & (df['Date'] <= data_atual)]['Close'].cumsum().iloc[-1]
+
+                else:
+                    # Filtrar o DataFrame para o mesmo símbolo e buscar a menor data
+                    menor_data = df[df['Symbol'] == symbol]['Date'].min()
+                    close_menor_data = df[(df['Symbol'] == symbol) & (df['Date'] == menor_data)]['Close'].values[0]
+                    # Calcular o rendimento
+                    rendimento = ((close_atual - close_menor_data) / close_menor_data * 100).round(2)
                 return rendimento
             # Aplicar a função para cada linha
             self.table_geral['Rendimento'] = self.table_geral.apply(calcular_rendimento_linha, axis=1, df=self.table_geral)
