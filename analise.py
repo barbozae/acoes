@@ -12,7 +12,7 @@ from io import BytesIO
 
 
 st.set_page_config(
-    page_title="Investimentos",
+    page_title="Plataforma",
     page_icon="💲",
     layout='wide',
     initial_sidebar_state='expanded',
