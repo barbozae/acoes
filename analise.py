@@ -176,7 +176,7 @@ class Application:
         with tab5:
             self.dividendo()
         with tab6:
-            self.hr_vender()
+            self.vender()
 
     def display_data(self):
         df_acoes = get_acoes()
@@ -621,26 +621,27 @@ class Application:
             st.markdown(f'Crescimento {rendimento_symbol}%')
             st.dataframe(df_rendimento)
 
-    def hr_vender(self):
+    def vender(self):
+        # esse copy esta me trazendo apenas as colunas selecionadas dispensando o drop
+        df_vendas = self.table_geral[['Date', 'Symbol']].copy()
         df_vendas = self.table_geral[self.table_geral['Date'] == self.table_geral['Date'].max()]
-        df_vendas.drop(['Open', 'High', 'Low', 'Volume', 'Variação', 'CNPJ_FUNDO', 'VL_PATRIM_LIQ', 'NR_COTST', 'Rendimento'], axis=1, inplace=True)
         
         # gerando dicionario com valores de venda
         valor_venda = {
-            'ALUP11.SA': 42.7,
-            'CMIG4.SA': 14.75,
-            'CPLE6.SA': 13.30,
-            'BBAS3.SA': 31.00,
-            'CYRE3.SA': 30.00,
-            'ITUB4.SA': 0.00,
-            'VIVA3.SA': 32.00
-        }
-        
-        # Convertendo o dicionário para DataFrame
-        df_valor_venda = pd.DataFrame(list(valor_venda.items()), columns=['Symbol', 'Valor Venda'])
-        df_vendas = pd.merge(df_vendas, df_valor_venda, on='Symbol', how='inner')
+            'Symbol': ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'ITUB4.SA', 'VIVA3.SA'],
+            'Valor Venda': [42.7, 14.75, 13.30, 31.00, 30.00, 0.00, 32.00],
+            'Valor Compra': [31.57, 11.51, 10.67, 28.35, 22.25, 36.57, 27.07],
+            'Data Compra': ['2024-08-26', '2024-08-26', '2024-08-26', '2024-08-26', '2024-08-27', '2024-08-23', '2024-08-26']
+            }        
+        df_valor_venda = pd.DataFrame(valor_venda)
 
-        st.dataframe(df_vendas, hide_index=True, column_order=['Date', 'Symbol', 'Close', 'Valor Venda'])
+        df_vendas = pd.merge(df_vendas, df_valor_venda, on='Symbol', how='inner')
+        df_vendas['Rentabilidade'] = ((df_vendas['Close'] - df_vendas['Valor Compra']) / df_vendas['Valor Compra'] * 100).round(2)
+        df_vendas = df_vendas.sort_values(by='Rendimento', ascending=False)
+        st.dataframe(df_vendas, 
+                            hide_index=True, 
+                            column_config={'Rentabilidade': st.column_config.NumberColumn('Rentabilidade', format='%.2f %%')},
+                            column_order=['Data Compra', 'Date', 'Symbol', 'Valor Compra', 'Close', 'Valor Venda', 'Rentabilidade'])
         
 
 if __name__ == "__main__":
