@@ -12,7 +12,7 @@ from io import BytesIO
 
 
 st.set_page_config(
-    page_title="Plataforma",
+    page_title="Investimentos",
     page_icon="💲",
     layout='wide',
     initial_sidebar_state='expanded',
@@ -21,8 +21,12 @@ st.set_page_config(
         'About': 'Aplicativo desenvolvido por Edson Barboza com objetivo de realizar acompanhamento de ações.'
     })
 
-@st.cache_data(ttl=900)
+@st.cache_data(ttl=3600)
 def get_acoes():
+    # acoes = ['^bvsp', 'cyre3.sa', 'bpac11.sa', 'bbas3.sa', 'eqtl3.sa', 'recv3.sa', 'prio3.sa' 'sanb11.sa', 'b3sa3.sa', 'elet3.sa', \
+    #          'itub4.sa', 'alup11.sa', 'cmig4.sa', 'cple6.sa', 'petr4.sa', 'tims3.sa', 'vale3.sa', 'vivt3.sa', 'viva3.sa', 'gmat3.sa', \
+                # 'igti11.sa', 'suzb3.sa']
+    # tickers = yf.Tickers(acoes, period='2y')
     tickers = yf.Tickers('^bvsp cyre3.sa bpac11.sa bbas3.sa eqtl3.sa recv3.sa brcr11.sa prio3.sa sanb11.sa b3sa3.sa elet3.sa \
                          itub4.sa alup11.sa cmig4.sa cple6.sa petr4.sa tims3.sa vale3.sa vivt3.sa viva3.sa gmat3.sa igti11.sa, suzb3.sa')
 
@@ -67,7 +71,7 @@ def get_acoes():
     petrobras['Symbol'] = 'PETR4.SA'
     tim['Symbol'] = 'TIMS3.SA'
     vale['Symbol'] = 'VALE3.SA'
-    vivo['Symbol'] = 'VIVT3.SA'
+    # vivo['Symbol'] = 'VIVT3.SA'
     vivara['Symbol'] = 'VIVA3.SA'
     grupo_matheus['Symbol'] = 'GMAT3.SA'
     iguatemi['Symbol'] = 'IGTI11.SA'
@@ -75,7 +79,7 @@ def get_acoes():
 
     # Concatenar todos os DataFrames
     dfs = [ibovespa, cyrela, banco_BTGP, brasil_on, equatorial, petro, petrorio, santander, b3, 
-           eletrobras, itau, alupar, cemig, copel, petrobras, tim, vale, vivo, vivara, grupo_matheus, iguatemi, suzano]
+           eletrobras, itau, alupar, cemig, copel, petrobras, tim, vale, vivara, grupo_matheus, iguatemi, suzano]
     df = pd.concat(dfs)
     df = df.drop('Stock Splits', axis=1)
 
@@ -88,7 +92,7 @@ def get_acoes():
     df.reset_index(inplace=True)
     return df
 
-@st.cache_data(ttl=900)
+@st.cache_data(ttl=43200)
 def get_fundos():
     ano = "2024"
     # Criar uma lista para armazenar os DataFrames de cada mês
@@ -99,7 +103,9 @@ def get_fundos():
         mes_formatado = f"{mes:02d}"
         # Criar a URL para o mês correspondente
         url = f'https://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/inf_diario_fi_{ano}{mes_formatado}.zip'
+
         print(f"Baixando dados do mês: {mes_formatado}/{ano}")
+
         # Fazer o download do arquivo ZIP
         download = requests.get(url)
         # Verificar se o download foi bem-sucedido
@@ -115,12 +121,13 @@ def get_fundos():
             dados_completos.append(dados_fundos)
         else:
             print(f"Erro ao baixar dados para {mes_formatado}/{ano}")
+
     # Concatenar todos os DataFrames em um único DataFrame
     df_fundos = pd.concat(dados_completos, ignore_index=True)
     dados_fundos = dados_fundos.drop(['RESG_DIA', 'CAPTC_DIA'], axis=1)
     return df_fundos
 
-@st.cache_data(ttl=900)
+@st.cache_data(ttl=86400)
 def get_name_fundos():
     df_name_fundos = pd.read_csv('https://dados.cvm.gov.br/dados/FI/CAD/DADOS/cad_fi.csv', 
                              sep = ";", encoding = 'ISO-8859-1')
@@ -128,7 +135,7 @@ def get_name_fundos():
     df_name_fundos = df_name_fundos.drop_duplicates()
     return df_name_fundos
 
-@st.cache_data(ttl=900)
+@st.cache_data(ttl=86400)
 def get_cdi():
     # site para consultar o codigo para tipo de consulta
     # https://www3.bcb.gov.br/sgspub/localizarseries/localizarSeries.do?method=prepararTelaLocalizarSeries
@@ -157,7 +164,7 @@ class Application:
         self.navegacao()
         
     def navegacao(self):
-        tab1, tab2, tab3, tab4, tab5 = st.tabs(['Análise diária', 'Crescimento', 'Variação %', 'Volume', 'Dividendo'])
+        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(['Análise diária', 'Crescimento', 'Variação %', 'Volume', 'Dividendo', 'Hora de vender'])
         with tab1:
             self.analise_diaria()
         with tab2:
@@ -168,6 +175,8 @@ class Application:
             self.volume()
         with tab5:
             self.dividendo()
+        with tab6:
+            self.hr_vender()
 
     def display_data(self):
         df_acoes = get_acoes()
@@ -228,18 +237,25 @@ class Application:
         # Obter os símbolos disponíveis no DataFrame
         simbolos = df['Symbol'].unique()
 
+        minha_acoes = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'ITUB4.SA', 'VIVA3.SA']
+        top5_itau = ['EQTL3.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
+        multimercado = ['ARMOR AXE', 'ABSOLUTE HIDRA', 'ITAÚ FUNDOS']
+        acompanhando = ['PETR4.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA']
+
         if selecao == 'Top5 + Minhas Ações':
-            default_selecao = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'PETR4.SA', 'TIMS3.SA', 'VALE3.SA', 'VIVT3.SA',
-                               'SBSP3.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
+            default_selecao = minha_acoes + top5_itau
+            
+            # ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA',
+            #                    'CPLE6.SA', 'CYRE3.SA', 'ITUB4.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
         elif selecao == 'Acompanhando':
             # default_selecao = ['CYRE3.SA', 'BPAC11.SA', 'BBAS3.SA', 'SBSP3.SA', 'RECV3.SA'] # PRIMEIRAS AÇÕES COM O TOP5 DA ITAU
-            default_selecao = ['PETR4.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA']
+            default_selecao = acompanhando
         elif selecao == 'Minhas Ações':
-            default_selecao = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'VIVT3.SA', 'ITUB4.SA', 'VIVA3.SA']
+            default_selecao = minha_acoes
         elif selecao == 'MultiMercado':
-            default_selecao = ['ARMOR AXE', 'ABSOLUTE HIDRA', 'ITAÚ FUNDOS']
+            default_selecao = multimercado
         else:
-            default_selecao = ['EQTL3.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
+            default_selecao = top5_itau
 
         # Garantir que os valores de selecao estão nas opções disponíveis
         default_selecao = [item for item in default_selecao if item in simbolos]
@@ -605,6 +621,27 @@ class Application:
             st.markdown(f'Crescimento {rendimento_symbol}%')
             st.dataframe(df_rendimento)
 
+    def hr_vender(self):
+        df_vendas = self.table_geral[self.table_geral['Date'] == self.table_geral['Date'].max()]
+        df_vendas.drop(['Open', 'High', 'Low', 'Volume', 'Variação', 'CNPJ_FUNDO', 'VL_PATRIM_LIQ', 'NR_COTST', 'Rendimento'], axis=1, inplace=True)
+        
+        # gerando dicionario com valores de venda
+        valor_venda = {
+            'ALUP11.SA': 42.7,
+            'CMIG4.SA': 14.75,
+            'CPLE6.SA': 13.30,
+            'BBAS3.SA': 31.00,
+            'CYRE3.SA': 30.00,
+            'ITUB4.SA': 0.00,
+            'VIVA3.SA': 32.00
+        }
+        
+        # Convertendo o dicionário para DataFrame
+        df_valor_venda = pd.DataFrame(list(valor_venda.items()), columns=['Symbol', 'Valor Venda'])
+        df_vendas = pd.merge(df_vendas, df_valor_venda, on='Symbol', how='inner')
+
+        st.dataframe(df_vendas, hide_index=True, column_order=['Date', 'Symbol', 'Close', 'Valor Venda'])
+        
 
 if __name__ == "__main__":
     Application()
