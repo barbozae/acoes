@@ -116,7 +116,7 @@ def get_fundos():
             # Ler o arquivo CSV dentro do ZIP
             dados_fundos = pd.read_csv(arquivo_zip.open(arquivo_zip.namelist()[0]), sep=";", encoding='ISO-8859-1', low_memory=False)
             # reduzindo o tamanho da tabela
-            dados_fundos = dados_fundos[dados_fundos['CNPJ_FUNDO'].str.contains("20.147.389/0001-00|34.172.497/0001-47|47.612.737/0001-29", na = False)]
+            dados_fundos = dados_fundos[dados_fundos['CNPJ_FUNDO'].str.contains("20.147.389/0001-00|34.172.497/0001-47|47.612.737/0001-29|36.249.317/0001-03", na = False)]
             # Adicionar os dados do mês ao DataFrame completo
             dados_completos.append(dados_fundos)
         else:
@@ -200,6 +200,7 @@ class Application:
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ARMOR AXE FI EM COTAS DE FUNDOS DE INVESTIMENTO MULTIMERCADO', 'ARMOR AXE')
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ABSOLUTE HIDRA CDI FI EM COTAS DE FUNDOS INCENTIVADOS DE INVEST EM INFRA RENDA FIXA CRÉDITO PRIVADO', 'ABSOLUTE HIDRA')
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ITAÚ AÇÕES BDR NÍVEL I FUNDO DE INVESTIMENTO EM COTAS DE FUNDOS DE INVESTIMENTO', 'ITAÚ FUNDOS')
+        base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ITAÚ INDEX US TECH FUNDO DE INVESTIMENTO EM COTAS DE FUNDOS DE INVESTIMENTO EM AÇÕES', 'US TECH')
 
         # Concatenando os DataFrames verticalmente
         df = pd.concat([df_acoes, base_multimercado], ignore_index=True)
@@ -232,28 +233,27 @@ class Application:
 
         # Filtro por Symbol
         selecao = st.radio('Seleção',
-                                    ['Top5 + Minhas Ações', 'Acompanhando', 'Top5', 'Minhas Ações', 'MultiMercado'], horizontal=True, index=2)
+                                    ['Top5 + Minhas Ações', 'Acompanhando', 'Top5', 'Minhas Ações', 'MultiMercado', 'Exterior'], horizontal=True, index=2)
         
         # Obter os símbolos disponíveis no DataFrame
         simbolos = df['Symbol'].unique()
 
         minha_acoes = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'ITUB4.SA', 'VIVA3.SA']
         top5_itau = ['EQTL3.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
-        multimercado = ['ARMOR AXE', 'ABSOLUTE HIDRA', 'ITAÚ FUNDOS']
+        multimercado = ['ARMOR AXE', 'ABSOLUTE HIDRA']
         acompanhando = ['PETR4.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA']
+        exterior = ['US TECH', 'ITAÚ FUNDOS']
 
         if selecao == 'Top5 + Minhas Ações':
             default_selecao = minha_acoes + top5_itau
-            
-            # ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA',
-            #                    'CPLE6.SA', 'CYRE3.SA', 'ITUB4.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
         elif selecao == 'Acompanhando':
-            # default_selecao = ['CYRE3.SA', 'BPAC11.SA', 'BBAS3.SA', 'SBSP3.SA', 'RECV3.SA'] # PRIMEIRAS AÇÕES COM O TOP5 DA ITAU
             default_selecao = acompanhando
         elif selecao == 'Minhas Ações':
             default_selecao = minha_acoes
         elif selecao == 'MultiMercado':
             default_selecao = multimercado
+        elif selecao == 'Exterior':
+            default_selecao = exterior
         else:
             default_selecao = top5_itau
 
@@ -282,7 +282,7 @@ class Application:
 
         # Ordene o DataFrame pelo índice 'Date'
         self.pivot_df = self.pivot_df.sort_values(by='Date')
-        
+
     def card(self):
         df = get_acoes()
         df['Date'] = pd.to_datetime(df['Date']).dt.date
