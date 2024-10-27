@@ -343,64 +343,8 @@ class Application:
                     key="card88"
                 )
 
-        # automatização 1
-
-        # cols = st.columns(8)
-        # with cols[0]:
-        #     ui.metric_card(title="Ibovespa",
-        #                 content=(max_close_symbol['^BVSP.SA']).round(2),
-        #                 description=f"{last_variation_symbol['^BVSP.SA'].round(2)}% Variação",
-        #                 key="card1")
-        # with cols[1]:
-        #     ui.metric_card(title="PetroRio",
-        #                    content=(max_close_symbol['PRIO3.SA']).round(2),
-        #                    description=f"{last_variation_symbol['PRIO3.SA'].round(2)}% Variação",
-        #                    key="card2")
-        # with cols[2]:
-        #     ui.metric_card(title="Santander",
-        #                    content=(max_close_symbol['SANB11.SA']).round(2),
-        #                    description=f"{last_variation_symbol['SANB11.SA'].round(2)}% Variação",
-        #                    key="card3")
-        # with cols[3]:
-        #     ui.metric_card(title="B3",
-        #                    content=max_close_symbol['B3SA3.SA'].round(2),
-        #                    description=f"{last_variation_symbol['B3SA3.SA'].round(2)}% Variação",
-        #                    key="card4")
-        # with cols[4]:
-        #     ui.metric_card(title="Sabesp",
-        #                    content=max_close_symbol['SBSP3.SA'].round(2),
-        #                    description=f"{last_variation_symbol['SBSP3.SA'].round(2)}% Variação",
-        #                    key="card5")
-        # with cols[5]:
-        #     ui.metric_card(title="Eletrobras",
-        #                    content=max_close_symbol['ELET3.SA'].round(2),
-        #                    description=f"{last_variation_symbol['ELET3.SA'].round(2)}% Variação",
-        #                    key="card6")
-
-        # # Drop o índice '^BVSP.SA', para somar a variação da carteira
-        # if '^BVSP.SA' in last_variation_symbol.index:
-        #     last_variation_symbol = last_variation_symbol.drop('^BVSP.SA')
-
-        # # Encontrar o símbolo com a maior variação
-        # symbol_max_variation = last_variation_symbol.idxmax()
-
-        # # symbol_max_variation = last_variation_symbol.idxmax() if not last_variation_symbol.empty else "Nenhum destaque"
-
-        # with cols[6]:
-        #     ui.metric_card(title="Fundo Imob",
-        #                    content=max_close_symbol['BRCR11.SA'].round(2),
-        #                    description=f"{last_variation_symbol['BRCR11.SA'].round(2)}% Variação",
-        #                    key="card7")
-        # with cols[7]:
-        #     ui.metric_card(title="Fechamento",
-        #                 #    content=(max_close_symbol['RECV3.SA']).round(2),
-        #                    content=last_variation_symbol.sum().round(2),
-        #                    description=f'Destaque {symbol_max_variation}',
-        #                    key="card8")
-
     def analise_diaria(self):
         self.table_geral = self.filtered_df.copy()
-
 
         # col1, col2 = st.columns([1, 0.5])
         # col1, col2, col3, col4 = st.columns([1.5, 1, 0.32, 0.38])
@@ -446,7 +390,7 @@ class Application:
             st.markdown(f'Variação {acumulado}')
 
             df_symbol_agrupado = self.table_geral.groupby(['Symbol'])['Variação'].sum()
-            st.dataframe(df_symbol_agrupado)
+            st.dataframe(df_symbol_agrupado, use_container_width=True)
 
         # with col4:
         #     ultima_data = self.table_geral['Date'].max()
@@ -619,7 +563,7 @@ class Application:
             # a soma foi feita diferente devido df_rendimento ter se tornado uma Series do pandas
             rendimento_symbol = (df_rendimento[:].sum() / len(df_rendimento[0:])).round(2)
             st.markdown(f'Crescimento {rendimento_symbol}%')
-            st.dataframe(df_rendimento)
+            st.dataframe(df_rendimento, use_container_width=True)
 
     def vender(self):
         # esse copy esta me trazendo apenas as colunas selecionadas dispensando o drop
