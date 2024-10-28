@@ -198,7 +198,7 @@ class Application:
     
         # Substituir os valores na coluna 'nome_fundo'
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ARMOR AXE FI EM COTAS DE FUNDOS DE INVESTIMENTO MULTIMERCADO', 'ARMOR AXE')
-        base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ABSOLUTE HIDRA CDI FI EM COTAS DE FUNDOS INCENTIVADOS DE INVEST EM INFRA RENDA FIXA CRÉDITO PRIVADO - RI', 'ABSOLUTE HIDRA')
+        base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ABSOLUTE HIDRA CDI FIC DE FIF RENDA FIXA INVESTIMENTO EM INFRAESTRUTURA CRÉDITO PRIVADO - RL', 'ABSOLUTE HIDRA')
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ITAÚ AÇÕES BDR NÍVEL I FUNDO DE INVESTIMENTO EM COTAS DE FUNDOS DE INVESTIMENTO', 'ITAÚ FUNDOS')
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ITAÚ INDEX US TECH FUNDO DE INVESTIMENTO EM COTAS DE FUNDOS DE INVESTIMENTO EM AÇÕES', 'US TECH')
 
