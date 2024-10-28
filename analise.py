@@ -554,6 +554,7 @@ class Application:
             
             # Aplicar a função para cada linha
             df['Rendimento'] = df.apply(calcular_rendimento_linha, axis=1, df=df)
+            st.dataframe(pivot_df_variacao.drop(['Média Móvel', 'Linha 0'], axis=1))
 
         with col2:
             ultima_data = df['Date'].max()
