@@ -281,9 +281,19 @@ class Application:
         if self.select_symbol:
             df = df[df['Symbol'].isin(self.select_symbol)]
 
+        # Nesse parte eu pego a data exata da seleção
         # Filtra o DataFrame com base no intervalo de datas selecionado
-        mask = (df['Date'] >= self.inicio_data) & (df['Date'] <= self.fim_data)
+        # mask = (df['Date'] >= self.inicio_data) & (df['Date'] <= self.fim_data)
+        # self.filtered_df = df.loc[mask]
+
+        # Encontra o último dia útil antes da `inicio_data`
+        ultimo_dia_util = df[df['Date'] < self.inicio_data].Date.max()
+
+        # Cria uma máscara que inclui o último dia útil e o intervalo de datas selecionado
+        # estou pegando um dia útil anterior para que o calculo do rendimento fica correto
+        mask = ((df['Date'] >= ultimo_dia_util) & (df['Date'] <= self.fim_data))
         self.filtered_df = df.loc[mask]
+        
         # Verifique quantos símbolos únicos estão presentes no DataFrame filtrado
         self.unique_symbols = self.filtered_df['Symbol'].unique()
 
