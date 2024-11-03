@@ -27,59 +27,65 @@ def get_acoes():
     #          'itub4.sa', 'alup11.sa', 'cmig4.sa', 'cple6.sa', 'petr4.sa', 'tims3.sa', 'vale3.sa', 'vivt3.sa', 'viva3.sa', 'gmat3.sa', \
                 # 'igti11.sa', 'suzb3.sa']
     # tickers = yf.Tickers(acoes, period='2y')
-    tickers = yf.Tickers('^bvsp cyre3.sa bpac11.sa bbas3.sa eqtl3.sa recv3.sa brcr11.sa prio3.sa sanb11.sa b3sa3.sa elet3.sa \
-                         itub4.sa alup11.sa cmig4.sa cple6.sa petr4.sa tims3.sa vale3.sa vivt3.sa viva3.sa gmat3.sa igti11.sa, suzb3.sa')
+
+    tickers = yf.Tickers('^bvsp \
+                        cxse3.sa petr4.sa dirr3.sa eqtl3.sa sanb11.sa \
+                        itub4.sa alup11.sa bbas3.sa cmig4.sa cple6.sa cyre3.sa viva3.sa\
+                        prio3.sa wege3.sa vale3.sa gmat3.sa igti11.sa, suzb3.sa')
 
     ibovespa = tickers.tickers['^BVSP'].history(period='2y')
-    cyrela = tickers.tickers['CYRE3.SA'].history(period='2y')
-    banco_BTGP = tickers.tickers['BPAC11.SA'].history(period="2y")
-    brasil_on = tickers.tickers['BBAS3.SA'].history(period="2y")
+
+    caixa = tickers.tickers['CXSE3.SA'].history(period="2y")
+    petrobras = tickers.tickers['PETR4.SA'].history(period="2y")
+    direcional = tickers.tickers['DIRR3.SA'].history(period="2y")
     equatorial = tickers.tickers['EQTL3.SA'].history(period="2y")
-    petro = tickers.tickers['RECV3.SA'].history(period="2y")
-    petrorio = tickers.tickers['PRIO3.SA'].history(period="2y")
     santander = tickers.tickers['SANB11.SA'].history(period="2y")
-    b3 = tickers.tickers['B3SA3.SA'].history(period="2y")
-    eletrobras = tickers.tickers['ELET3.SA'].history(period="2y")
+
     itau = tickers.tickers['ITUB4.SA'].history(period="2y")
     alupar = tickers.tickers['ALUP11.SA'].history(period="2y")
+    brasil_on = tickers.tickers['BBAS3.SA'].history(period="2y")
     cemig = tickers.tickers['CMIG4.SA'].history(period="2y")
     copel = tickers.tickers['CPLE6.SA'].history(period="2y")
-    petrobras = tickers.tickers['PETR4.SA'].history(period="2y")
-    tim = tickers.tickers['TIMS3.SA'].history(period="2y")
-    vale = tickers.tickers['VALE3.SA'].history(period="2y")
-    vivo = tickers.tickers['VIVT3.SA'].history(period="2y")
+    cyrela = tickers.tickers['CYRE3.SA'].history(period='2y')
     vivara = tickers.tickers['VIVA3.SA'].history(period="2y")
+
+    petrorio = tickers.tickers['PRIO3.SA'].history(period="2y")
+    wege = tickers.tickers['WEGE3.SA'].history(period="2y")
+    vale = tickers.tickers['VALE3.SA'].history(period="2y")
     grupo_matheus = tickers.tickers['GMAT3.SA'].history(period="2y")
     iguatemi = tickers.tickers['IGTI11.SA'].history(period="2y")
     suzano = tickers.tickers['SUZB3.SA'].history(period="2y")
 
     # Adicionar uma coluna para identificar cada ação
     ibovespa['Symbol'] = '^BVSP.SA'
-    cyrela['Symbol'] = 'CYRE3.SA'
-    banco_BTGP['Symbol'] = 'BPAC11.SA'
-    brasil_on['Symbol'] = 'BBAS3.SA'
+
+    caixa['Symbol'] = 'CXSE3.SA'
+    petrobras['Symbol'] = 'PETR4.SA'
+    direcional['Symbol'] = 'DIRR3.SA'
     equatorial['Symbol'] = 'EQTL3.SA'
-    petro['Symbol'] = 'RECV3.SA'
-    petrorio['Symbol'] = 'PRIO3.SA'
     santander['Symbol'] = 'SANB11.SA'
-    b3['Symbol'] = 'B3SA3.SA'
-    eletrobras['Symbol'] = 'ELET3.SA'
+
     itau['Symbol'] = 'ITUB4.SA'
     alupar['Symbol'] = 'ALUP11.SA'
+    brasil_on['Symbol'] = 'BBAS3.SA'
     cemig['Symbol'] = 'CMIG4.SA'
     copel['Symbol'] = 'CPLE6.SA'
-    petrobras['Symbol'] = 'PETR4.SA'
-    tim['Symbol'] = 'TIMS3.SA'
-    vale['Symbol'] = 'VALE3.SA'
-    # vivo['Symbol'] = 'VIVT3.SA'
+    cyrela['Symbol'] = 'CYRE3.SA'
     vivara['Symbol'] = 'VIVA3.SA'
+
+    petrorio['Symbol'] = 'PRIO3.SA'
+    wege['Symbol'] = 'WEGE3.SA'
+    vale['Symbol'] = 'VALE3.SA'
     grupo_matheus['Symbol'] = 'GMAT3.SA'
     iguatemi['Symbol'] = 'IGTI11.SA'
     suzano['Symbol'] = 'SUZB3.SA'
 
     # Concatenar todos os DataFrames
-    dfs = [ibovespa, cyrela, banco_BTGP, brasil_on, equatorial, petro, petrorio, santander, b3, 
-           eletrobras, itau, alupar, cemig, copel, petrobras, tim, vale, vivara, grupo_matheus, iguatemi, suzano]
+    dfs = [ibovespa, 
+           caixa, petrobras, direcional, equatorial, santander,
+           itau, alupar, brasil_on, cemig, copel, cyrela, vivara,
+           petrorio, wege, vale, grupo_matheus, iguatemi, suzano
+           ]
     df = pd.concat(dfs)
     df = df.drop('Stock Splits', axis=1)
 
@@ -246,10 +252,10 @@ class Application:
         # Obter os símbolos disponíveis no DataFrame
         simbolos = df['Symbol'].unique()
 
+        top5_itau = ['CXSE3.SA', 'PETR4.SA', 'DIRR3.SA', 'EQTL3.SA', 'SANB11.SA']
         minha_acoes = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'ITUB4.SA', 'VIVA3.SA']
-        top5_itau = ['EQTL3.SA', 'PRIO3.SA', 'SANB11.SA', 'B3SA3.SA', 'ELET3.SA']
         multimercado = ['ARMOR AXE', 'ABSOLUTE HIDRA']
-        acompanhando = ['PETR4.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA']
+        acompanhando = ['PRIO.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA', 'WEGE3.SA']
         exterior = ['US TECH', 'ITAÚ FUNDOS']
 
         if selecao == 'Top5 + Minhas Ações':
