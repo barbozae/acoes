@@ -23,79 +23,36 @@ st.set_page_config(
 
 @st.cache_data(ttl=3600)
 def get_acoes():
-    # acoes = ['^bvsp', 'cyre3.sa', 'bpac11.sa', 'bbas3.sa', 'eqtl3.sa', 'recv3.sa', 'prio3.sa' 'sanb11.sa', 'b3sa3.sa', 'elet3.sa', \
-    #          'itub4.sa', 'alup11.sa', 'cmig4.sa', 'cple6.sa', 'petr4.sa', 'tims3.sa', 'vale3.sa', 'vivt3.sa', 'viva3.sa', 'gmat3.sa', \
-                # 'igti11.sa', 'suzb3.sa']
-    # tickers = yf.Tickers(acoes, period='2y')
+    # Definindo os símbolos das criptomoedas
+    symbols = ['BVSP.SA', 'CXSE3.SA', 'PETR4.SA', 'DIRR3.SA', 'EQTL3.SA', 'SANB11.SA','ITUB4.SA', \
+               'ALUP11.SA', 'BBAS3.SA', 'CMIG4.SA', 'CPLE6.SA', 'CYRE3.SA', 'VIVA3.SA', 'PRIO3.SA',\
+                'WEGE3.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA',\
+                'BTC-USD', 'SOL-USD', 'ETH-USD', 'AVAX-USD', 'OP-USD', 'LDO-USD', 'RNDR-USD', 'MATIC-USD', 'ARB-USD']
 
-    tickers = yf.Tickers('^bvsp \
-                        cxse3.sa petr4.sa dirr3.sa eqtl3.sa sanb11.sa \
-                        itub4.sa alup11.sa bbas3.sa cmig4.sa cple6.sa cyre3.sa viva3.sa\
-                        prio3.sa wege3.sa vale3.sa gmat3.sa igti11.sa, suzb3.sa')
+    # Função para coletar e processar os dados
+    def get_crypto_data(symbol):
+        # Baixando os dados históricos (preço) e os dividendos
+        data = yf.download(symbol, period='2y')
+        dividends = yf.Ticker(symbol).dividends  # Coletando os dividendos
+        
+        # Resetando o índice para transformar o índice em uma coluna
+        data = data.reset_index()
+        data['Symbol'] = symbol  # Adicionar a coluna com o símbolo
+        
+        # Adicionar a coluna de dividendos ao DataFrame
+        data['Dividends'] = data['Date'].map(lambda x: dividends.get(x, None))
+        
+        return data
 
-    ibovespa = tickers.tickers['^BVSP'].history(period='2y')
-
-    caixa = tickers.tickers['CXSE3.SA'].history(period="2y")
-    petrobras = tickers.tickers['PETR4.SA'].history(period="2y")
-    direcional = tickers.tickers['DIRR3.SA'].history(period="2y")
-    equatorial = tickers.tickers['EQTL3.SA'].history(period="2y")
-    santander = tickers.tickers['SANB11.SA'].history(period="2y")
-
-    itau = tickers.tickers['ITUB4.SA'].history(period="2y")
-    alupar = tickers.tickers['ALUP11.SA'].history(period="2y")
-    brasil_on = tickers.tickers['BBAS3.SA'].history(period="2y")
-    cemig = tickers.tickers['CMIG4.SA'].history(period="2y")
-    copel = tickers.tickers['CPLE6.SA'].history(period="2y")
-    cyrela = tickers.tickers['CYRE3.SA'].history(period='2y')
-    vivara = tickers.tickers['VIVA3.SA'].history(period="2y")
-
-    petrorio = tickers.tickers['PRIO3.SA'].history(period="2y")
-    wege = tickers.tickers['WEGE3.SA'].history(period="2y")
-    vale = tickers.tickers['VALE3.SA'].history(period="2y")
-    grupo_matheus = tickers.tickers['GMAT3.SA'].history(period="2y")
-    iguatemi = tickers.tickers['IGTI11.SA'].history(period="2y")
-    suzano = tickers.tickers['SUZB3.SA'].history(period="2y")
-
-    # Adicionar uma coluna para identificar cada ação
-    ibovespa['Symbol'] = '^BVSP.SA'
-
-    caixa['Symbol'] = 'CXSE3.SA'
-    petrobras['Symbol'] = 'PETR4.SA'
-    direcional['Symbol'] = 'DIRR3.SA'
-    equatorial['Symbol'] = 'EQTL3.SA'
-    santander['Symbol'] = 'SANB11.SA'
-
-    itau['Symbol'] = 'ITUB4.SA'
-    alupar['Symbol'] = 'ALUP11.SA'
-    brasil_on['Symbol'] = 'BBAS3.SA'
-    cemig['Symbol'] = 'CMIG4.SA'
-    copel['Symbol'] = 'CPLE6.SA'
-    cyrela['Symbol'] = 'CYRE3.SA'
-    vivara['Symbol'] = 'VIVA3.SA'
-
-    petrorio['Symbol'] = 'PRIO3.SA'
-    wege['Symbol'] = 'WEGE3.SA'
-    vale['Symbol'] = 'VALE3.SA'
-    grupo_matheus['Symbol'] = 'GMAT3.SA'
-    iguatemi['Symbol'] = 'IGTI11.SA'
-    suzano['Symbol'] = 'SUZB3.SA'
-
-    # Concatenar todos os DataFrames
-    dfs = [ibovespa, 
-           caixa, petrobras, direcional, equatorial, santander,
-           itau, alupar, brasil_on, cemig, copel, cyrela, vivara,
-           petrorio, wege, vale, grupo_matheus, iguatemi, suzano
-           ]
-    df = pd.concat(dfs)
-    df = df.drop('Stock Splits', axis=1)
+    # Coletando e concatenando os dados
+    dfs = [get_crypto_data(symbol) for symbol in symbols]
+    df = pd.concat(dfs, ignore_index=True)
 
     df['Variação'] = df['Close'] - df['Open']
 
-    # df['Rendimento'] = (df['Close'] / df['Open']) - 1
-    # df_concat['Variação'] = df_concat['Close'].pct_change() * 100
+    # Definir a zona de data (timezone) para a coluna 'Date' (exemplo: 'America/Sao_Paulo')
+    df['Date'] = df['Date'].dt.tz_localize('UTC').dt.tz_convert('America/Sao_Paulo')
 
-    # Resetar o índice para uma melhor organização
-    df.reset_index(inplace=True)
     return df
 
 @st.cache_data(ttl=43200)
@@ -247,7 +204,7 @@ class Application:
 
         # Filtro por Symbol
         selecao = st.radio('Seleção',
-                                    ['Top5 + Minhas Ações', 'Acompanhando', 'Top5', 'Minhas Ações', 'MultiMercado', 'Exterior'], horizontal=True, index=2)
+                                    ['Top5 + Minhas Ações', 'Acompanhando', 'Top5', 'Minhas Ações', 'MultiMercado', 'Exterior', 'CriptoMoeda'], horizontal=True, index=2)
         
         # Obter os símbolos disponíveis no DataFrame
         simbolos = df['Symbol'].unique()
@@ -257,6 +214,7 @@ class Application:
         multimercado = ['ARMOR AXE', 'ABSOLUTE HIDRA']
         acompanhando = ['PRIO.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA', 'WEGE3.SA']
         exterior = ['US TECH', 'ITAÚ FUNDOS']
+        cripto_moeda = ['BTC-USD', 'SOL-USD', 'ETH-USD', 'AVAX-USD', 'OP-USD', 'LDO-USD', 'RNDR-USD', 'MATIC-USD', 'ARB-USD']
 
         if selecao == 'Top5 + Minhas Ações':
             default_selecao = minha_acoes + top5_itau
@@ -268,6 +226,8 @@ class Application:
             default_selecao = multimercado
         elif selecao == 'Exterior':
             default_selecao = exterior
+        elif selecao == 'CriptoMoeda':
+            default_selecao = cripto_moeda
         else:
             default_selecao = top5_itau
 
