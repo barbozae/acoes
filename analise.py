@@ -27,7 +27,8 @@ def get_acoes():
     symbols = ['BVSP.SA', 'CXSE3.SA', 'PETR4.SA', 'DIRR3.SA', 'EQTL3.SA', 'SANB11.SA','ITUB4.SA', \
                'ALUP11.SA', 'BBAS3.SA', 'CMIG4.SA', 'CPLE6.SA', 'CYRE3.SA', 'VIVA3.SA', 'PRIO3.SA',\
                 'WEGE3.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA',\
-                'BTC-USD', 'SOL-USD', 'ETH-USD', 'AVAX-USD', 'OP-USD', 'LDO-USD', 'RNDR-USD', 'MATIC-USD', 'ARB-USD']
+                'BTC-USD', 'SOL-USD', 'ETH-USD', 'AVAX-USD', 'OP-USD', 'LDO-USD', 'RNDR-USD', 'MATIC-USD', 'ARB-USD',\
+                'VOO', 'QQQ', 'ACWI']
 
     # Função para coletar e processar os dados
     def get_crypto_data(symbol):
@@ -204,7 +205,7 @@ class Application:
 
         # Filtro por Symbol
         selecao = st.radio('Seleção',
-                                    ['Top5 + Minhas Ações', 'Acompanhando', 'Top5', 'Minhas Ações', 'MultiMercado', 'Exterior', 'CriptoMoeda'], horizontal=True, index=2)
+                                    ['Top5 + Minhas Ações', 'Acompanhando', 'Top5', 'Minhas Ações', 'MultiMercado', 'Fundo', 'Exterior', 'CriptoMoeda'], horizontal=True, index=2)
         
         # Obter os símbolos disponíveis no DataFrame
         simbolos = df['Symbol'].unique()
@@ -213,8 +214,9 @@ class Application:
         minha_acoes = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'ITUB4.SA', 'VIVA3.SA']
         multimercado = ['ARMOR AXE', 'ABSOLUTE HIDRA']
         acompanhando = ['PRIO.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA', 'WEGE3.SA']
-        exterior = ['US TECH', 'ITAÚ FUNDOS']
+        fundos = ['US TECH', 'ITAÚ FUNDOS']
         cripto_moeda = ['BTC-USD', 'SOL-USD', 'ETH-USD', 'AVAX-USD', 'OP-USD', 'LDO-USD', 'RNDR-USD', 'MATIC-USD', 'ARB-USD']
+        exterior = ['VOO', 'QQQ', 'ACWI']
 
         if selecao == 'Top5 + Minhas Ações':
             default_selecao = minha_acoes + top5_itau
@@ -226,6 +228,8 @@ class Application:
             default_selecao = multimercado
         elif selecao == 'Exterior':
             default_selecao = exterior
+        elif selecao == 'Fundo':
+            default_selecao = fundos
         elif selecao == 'CriptoMoeda':
             default_selecao = cripto_moeda
         else:
