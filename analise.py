@@ -24,10 +24,18 @@ st.set_page_config(
 @st.cache_data(ttl=3600)
 def get_acoes():
     # Definindo os símbolos das criptomoedas
-    symbols = ['BVSP.SA', 'CXSE3.SA', 'PETR4.SA', 'DIRR3.SA', 'EQTL3.SA', 'SANB11.SA','ITUB4.SA', \
-               'ALUP11.SA', 'BBAS3.SA', 'CMIG4.SA', 'CPLE6.SA', 'CYRE3.SA', 'VIVA3.SA', 'PRIO3.SA',\
+    symbols = [
+               # Ações
+               '^BVSP', 'CXSE3.SA', 'PETR4.SA', 'DIRR3.SA', 'EQTL3.SA', 'SANB11.SA','ITUB4.SA', \
+               'ALUP11.SA', 'BBAS3.SA', 'CPLE6.SA', 'CYRE3.SA', 'VIVA3.SA', 'PRIO3.SA',\
                 'WEGE3.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA',\
-                'BTC-USD', 'SOL-USD', 'ETH-USD', 'AVAX-USD', 'OP-USD', 'LDO-USD', 'RNDR-USD', 'MATIC-USD', 'ARB-USD',\
+                # Cripto de baixo risco
+                'BTC-USD', 'ETH-USD'\
+                # Cripto de médio risco
+                'LINK-USD', 'TON-USD', 'ATOM-USD', 'SOL-USD',  'AVAX-USD', 'ARB-USD', 'OP-USD',\
+                # Cripto de alto risco    
+                'APT-USD', 'SUI20947-USD', 'LDO-USD',\
+                # ETF exterior
                 'VOO', 'QQQ', 'ACWI']
 
     # Função para coletar e processar os dados
@@ -210,12 +218,19 @@ class Application:
         # Obter os símbolos disponíveis no DataFrame
         simbolos = df['Symbol'].unique()
 
-        top5_itau = ['CXSE3.SA', 'PETR4.SA', 'DIRR3.SA', 'EQTL3.SA', 'SANB11.SA']
-        minha_acoes = ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'ITUB4.SA', 'VIVA3.SA']
+        top5_itau = ['CXSE3.SA', 'PRIO.SA', 'DIRR3.SA', 'EQTL3.SA', 'SANB11.SA']
+        minha_acoes = ['ALUP11.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'ITUB4.SA', 'VIVA3.SA']
         multimercado = ['ARMOR AXE', 'ABSOLUTE HIDRA']
-        acompanhando = ['PRIO.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA', 'WEGE3.SA']
+        acompanhando = ['PETR4.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA', 'WEGE3.SA']
         fundos = ['US TECH', 'ITAÚ FUNDOS']
-        cripto_moeda = ['BTC-USD', 'SOL-USD', 'ETH-USD', 'AVAX-USD', 'OP-USD', 'LDO-USD', 'RNDR-USD', 'MATIC-USD', 'ARB-USD']
+        cripto_moeda = [# Baixo risco
+                        'BTC-USD', 'ETH-USD',
+                        # Médio risco
+                        'LINK-USD', 'TON-USD', 'ATOM-USD', 'SOL-USD',  'AVAX-USD', 'ARB-USD', 'OP-USD',
+                        # Alto risco    
+                        'APT-USD', 'SUI20947-USD', 'LDO-USD'
+                        ]
+
         exterior = ['VOO', 'QQQ', 'ACWI']
 
         if selecao == 'Top5 + Minhas Ações':
@@ -542,7 +557,59 @@ class Application:
             
             # Aplicar a função para cada linha
             df['Rendimento'] = df.apply(calcular_rendimento_linha, axis=1, df=df)
+
+            st.write("Rendimento diário")
             st.dataframe(pivot_df_variacao.drop(['Média Móvel', 'Linha 0'], axis=1))
+           
+        # Tabela de rendimento
+        # Função para preparar os dados iniciais
+        def preparar_dados(df):
+            df['Date'] = pd.to_datetime(df['Date'])
+            df['Mês/Ano'] = df['Date'].dt.to_period('M').dt.strftime('%b/%y')
+            return df
+
+        # Função para calcular rendimento acumulativo
+        def calcular_rendimento_acumulativo(df):
+            rendimento_acumulativo = (
+                df.groupby(['Symbol', df['Date'].dt.to_period('M')])['Rendimento']
+                .last()
+                .reset_index()
+                .dropna()
+            )
+            rendimento_acumulativo['Date'] = rendimento_acumulativo['Date'].dt.to_timestamp()
+            rendimento_acumulativo['Mês/Ano'] = rendimento_acumulativo['Date'].dt.strftime('%b/%y')
+            return rendimento_acumulativo.pivot(
+                index='Symbol', columns='Mês/Ano', values='Rendimento'
+            ).sort_index(axis=1, key=lambda x: pd.to_datetime(x, format='%b/%y'))
+
+        # Função para calcular rendimento mensal
+        def calcular_rendimento_mensal(df):
+            rendimento_mensal = (
+                df.groupby(['Symbol', df['Date'].dt.to_period('M')])['Rendimento']
+                .last()
+                .reset_index()
+                .dropna()
+            )
+            rendimento_mensal['Rendimento_Mensal'] = rendimento_mensal.groupby('Symbol')['Rendimento'].diff()
+            rendimento_mensal['Date'] = rendimento_mensal['Date'].dt.to_timestamp()
+            rendimento_mensal['Mês/Ano'] = rendimento_mensal['Date'].dt.strftime('%b/%y')
+            return rendimento_mensal.pivot(
+                index='Symbol', columns='Mês/Ano', values='Rendimento_Mensal'
+            ).sort_index(axis=1, key=lambda x: pd.to_datetime(x, format='%b/%y'))
+
+        # Preparar os dados
+        df = preparar_dados(df)
+
+        # Calcular rendimentos
+        df_rendimento_acumulativo = calcular_rendimento_acumulativo(df)
+        df_rendimento_mensal = calcular_rendimento_mensal(df)
+
+        # Exibir no Streamlit
+        st.write("Rendimento Acumulativo")
+        st.dataframe(df_rendimento_acumulativo)
+
+        st.write("Rendimento Mensal")
+        st.dataframe(df_rendimento_mensal)
 
         with col2:
             ultima_data = df['Date'].max()
@@ -561,10 +628,10 @@ class Application:
         
         # gerando dicionario com valores de venda
         valor_venda = {
-            'Symbol': ['ALUP11.SA', 'CMIG4.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'ITUB4.SA', 'VIVA3.SA'],
-            'Valor Venda': [42.7, 14.75, 13.30, 31.00, 30.00, 0.00, 32.00],
-            'Valor Compra': [31.57, 11.51, 10.67, 28.35, 22.25, 36.57, 27.07],
-            'Data Compra': ['2024-08-26', '2024-08-26', '2024-08-26', '2024-08-26', '2024-08-27', '2024-08-23', '2024-08-26']
+            'Symbol': ['ALUP11.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'ITUB4.SA', 'VIVA3.SA'],
+            'Valor Venda': [42.7, 13.30, 31.00, 30.00, 0.00, 32.00],
+            'Valor Compra': [31.57, 10.67, 28.35, 22.25, 36.57, 27.07],
+            'Data Compra': ['2024-08-26', '2024-08-26', '2024-08-26', '2024-08-27', '2024-08-23', '2024-08-26']
             }        
         df_valor_venda = pd.DataFrame(valor_venda)
 
