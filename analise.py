@@ -1,5 +1,7 @@
 import streamlit as st
+from streamlit_option_menu import option_menu
 import yfinance as yf
+import requests
 import time as time
 import pandas as pd
 import datetime as datetime
@@ -41,7 +43,7 @@ def get_acoes():
     # Função para coletar e processar os dados
     def get_crypto_data(symbol):
         # Baixando os dados históricos (preço) e os dividendos
-        data = yf.download(symbol, period='2y')
+        data = yf.download(symbol, period='1y')
         dividends = yf.Ticker(symbol).dividends  # Coletando os dividendos
         
         # Resetando o índice para transformar o índice em uma coluna
@@ -142,9 +144,44 @@ class Application:
         self.display_data()
         self.card()
         self.navegacao()
-        
+    
+
     def navegacao(self):
-        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(['Análise diária', 'Crescimento', 'Variação %', 'Volume', 'Dividendo', 'Hora de vender'])
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(['Análise diária', 'Crescimento', 'Variação %', 'Volume', 
+                                                      'Dividendo', 'Hora de vender', 'Notícias'])     
+
+        def get_noticias(query):
+            api_key = "4902e399258141fcbcd281a0d559b41a"  # Substitua pela sua chave da News API
+            # api_key = "68b226a1179b48a7ac5bb607b0ff0af0"  # Substitua pela sua chave da News API
+            url = f"https://newsapi.org/v2/everything?q={query}&sortBy=publishedAt&language=pt&apiKey={api_key}"
+            try:
+                response = requests.get(url)
+                response.raise_for_status()  # Lança um erro se o status não for 200
+                data = response.json()
+                if "articles" in data and data["articles"]:  # Verifica se há artigos
+                    return data["articles"][:6]  # Retorna os três primeiros artigos
+                else:
+                    return None
+            except requests.exceptions.RequestException as e:
+                st.error(f"Erro ao acessar a API de notícias: {e}")
+                return None
+
+        def show_news(articles):
+            st.markdown('')
+            # st.markdown('---')
+            st.markdown('''### *:red[Últimas notícias] :red[..] :red[.]*''')
+            st.write('')
+            if articles:
+                for article in articles:
+                    if 'urlToImage' in article and article['urlToImage']:  # Verifica se a imagem existe
+                        st.image(article['urlToImage'], caption=article['title'], width=270)
+                    st.markdown("##### " + article["description"])
+                    st.write("Fonte:", article["source"]["name"])
+                    published_date = datetime.datetime.strptime(article["publishedAt"], '%Y-%m-%dT%H:%M:%SZ')  # Converte para datetime
+                    formatted_date = published_date.strftime('%d/%m/%Y')  # Formata como dia/mês/ano
+                    st.markdown(f"Publicado em: {formatted_date}")
+                    st.write("[Leia mais](" + article["url"] + ")")
+
         with tab1:
             self.analise_diaria()
         with tab2:
@@ -157,6 +194,36 @@ class Application:
             self.dividendo()
         with tab6:
             self.vender()
+        with tab7:
+            tab1, tab2, tab3, tab4 = st.tabs(['CriptoMoedas', 'Ações', 'Exterior', 'ETFs'])
+            with tab1:
+                articles = get_noticias("criptomoedas")
+                if articles:
+                    show_news(articles)
+                else:
+                    st.write("Não foi possível carregar as notícias. Tente novamente mais tarde.")
+            
+            with tab2:
+                articles = get_noticias("Ibovespa")
+                if articles:
+                    show_news(articles)
+                else:
+                    st.write("Não foi possível carregar as notícias. Tente novamente mais tarde.")
+            
+            with tab3:
+                articles = get_noticias("nasdaq, dow jones e S&P500")
+                if articles:
+                    show_news(articles)
+                else:
+                    st.write("Não foi possível carregar as notícias. Tente novamente mais tarde.")
+
+            with tab4:
+                articles = get_noticias("Exchange-Traded Funds")
+                if articles:
+                    show_news(articles)
+                else:
+                    st.write("Não foi possível carregar as notícias. Tente novamente mais tarde.")                
+
 
     def display_data(self):
         df_acoes = get_acoes()
@@ -205,7 +272,7 @@ class Application:
         with col1:
             self.inicio_data = st.date_input(
                 'Data inicial', 
-                datetime.date(tempo_local[0], tempo_local[1], 1), format='DD/MM/YYYY') 
+                datetime.date(tempo_local[0], tempo_local[1], 1), format='DD/MM/YYYY')
         with col2:
             self.fim_data = st.date_input(
                     'Data final', 
@@ -218,7 +285,7 @@ class Application:
         # Obter os símbolos disponíveis no DataFrame
         simbolos = df['Symbol'].unique()
 
-        top5_itau = ['CXSE3.SA', 'PRIO.SA', 'DIRR3.SA', 'EQTL3.SA', 'SANB11.SA']
+        top5_itau = ['CXSE3.SA', 'PRIO3.SA', 'DIRR3.SA', 'EQTL3.SA', 'SANB11.SA']
         minha_acoes = ['ALUP11.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'ITUB4.SA', 'VIVA3.SA']
         multimercado = ['ARMOR AXE', 'ABSOLUTE HIDRA']
         acompanhando = ['PETR4.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA', 'WEGE3.SA']
@@ -642,7 +709,7 @@ class Application:
                             hide_index=True, 
                             column_config={'Rentabilidade': st.column_config.NumberColumn('Rentabilidade', format='%.2f %%')},
                             column_order=['Data Compra', 'Date', 'Symbol', 'Valor Compra', 'Close', 'Valor Venda', 'Rentabilidade'])
-        
+
 
 if __name__ == "__main__":
     Application()
