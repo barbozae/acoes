@@ -35,9 +35,9 @@ def get_acoes():
                 # Cripto de médio risco
                 'LINK-USD', 'TON-USD', 'ATOM-USD', 'SOL-USD',  'AVAX-USD', 'ARB-USD', 'OP-USD',\
                 # Cripto de alto risco    
-                'APT-USD', 'SUI20947-USD', 'LDO-USD',\
+                'APT-USD', 'SUI20947-USD', 'LDO-USD', 'ME-USD'\
                 # ETF exterior
-                'VOO', 'QQQ', 'ACWI']
+                'VOO', 'QQQ', 'ACWI', 'HACK', 'VUG', 'VB']
 
     # Função para coletar e processar os dados
     def get_crypto_data(symbol):
@@ -71,6 +71,7 @@ def get_fundos():
     # Criar uma lista para armazenar os DataFrames de cada mês
     dados_completos = []
     # Loop para iterar sobre todos os meses do ano
+
     for mes in range(1, 13):
         # Formatar o mês com dois dígitos (ex: '01', '02', ...)
         mes_formatado = f"{mes:02d}"
@@ -80,7 +81,8 @@ def get_fundos():
         print(f"Baixando dados do mês: {mes_formatado}/{ano}")
 
         # Fazer o download do arquivo ZIP
-        download = requests.get(url)
+        # download = requests.get(url, verify="/caminho/para/certificado.pem") esse código passou a dar erro
+        download = requests.get(url, verify=True)
         # Verificar se o download foi bem-sucedido
         if download.status_code == 200:
             # Abrir o arquivo ZIP a partir do conteúdo baixado
@@ -102,7 +104,7 @@ def get_fundos():
             dados_completos.append(dados_fundos)
         else:
             print(f"Erro ao baixar dados para {mes_formatado}/{ano}")
-
+        
     # Concatenar todos os DataFrames em um único DataFrame
     df_fundos = pd.concat(dados_completos, ignore_index=True)
     dados_fundos = dados_fundos.drop(['RESG_DIA', 'CAPTC_DIA'], axis=1)
@@ -144,11 +146,10 @@ class Application:
         self.card()
         self.navegacao()
     
-
     def navegacao(self):
         tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(['Análise diária', 'Crescimento', 'Variação %', 'Volume', 
                                                       'Dividendo', 'Hora de vender', 'Notícias'])     
-
+        @staticmethod
         def get_noticias(query):
             api_key = "4902e399258141fcbcd281a0d559b41a"  # Substitua pela sua chave da News API
             # api_key = "68b226a1179b48a7ac5bb607b0ff0af0"  # Substitua pela sua chave da News API
@@ -222,7 +223,6 @@ class Application:
                     show_news(articles)
                 else:
                     st.write("Não foi possível carregar as notícias. Tente novamente mais tarde.")                
-
 
     def display_data(self):
         df_acoes = get_acoes()
@@ -694,21 +694,33 @@ class Application:
         
         # gerando dicionario com valores de venda
         valor_venda = {
-            'Symbol': ['ALUP11.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'ITUB4.SA', 'VIVA3.SA'],
-            'Valor Venda': [42.7, 13.30, 31.00, 30.00, 0.00, 32.00],
-            'Valor Compra': [31.57, 10.67, 28.35, 22.25, 36.57, 27.07],
-            'Data Compra': ['2024-08-26', '2024-08-26', '2024-08-26', '2024-08-27', '2024-08-23', '2024-08-26']
+            'Symbol': ['ALUP11.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'ITUB4.SA', 'VIVA3.SA',
+                        'BTC-USD', 'ETH-USD', 'LINK-USD', 'TON-USD', 'ATOM-USD', 'SOL-USD',
+                        'AVAX-USD', 'ARB-USD', 'APT-USD', 'LDO-USD', 'SUI20947-USD', 'OP-USD', 'ME-USD'],
+            'Valor Venda': [42.7, 13.30, 31.00, 30.00, 0.00, 32.00,
+                            119594.41, 4758.36, 30.77, 8.05, 11.98, 282.59,
+                            63.36, 1.37, 17.06, 2.57, 4.96, 3.14, 6.52
+                            ],
+            'Valor Compra': [31.57, 10.67, 28.35, 22.25, 36.57, 27.07,
+                              99662, 3965.3, 25.64, 6.71, 9.98, 235.49,
+                              52.80, 1.14, 14.22, 2.14, 4.13, 2.62, 5.43
+                              ],
+            'Data Compra': ['2024-08-26', '2024-08-26', '2024-08-26', '2024-08-27', '2024-08-23', '2024-08-26',
+                            '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-08',
+                            '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-10']
             }        
         df_valor_venda = pd.DataFrame(valor_venda)
 
         df_vendas = pd.merge(df_vendas, df_valor_venda, on='Symbol', how='inner')
         df_vendas['Rentabilidade'] = ((df_vendas['Close'] - df_vendas['Valor Compra']) / df_vendas['Valor Compra'] * 100).round(2)
         df_vendas = df_vendas.sort_values(by='Rendimento', ascending=False)
-        st.dataframe(df_vendas, 
-                            hide_index=True, 
-                            column_config={'Rentabilidade': st.column_config.NumberColumn('Rentabilidade', format='%.2f %%')},
-                            column_order=['Data Compra', 'Date', 'Symbol', 'Valor Compra', 'Close', 'Valor Venda', 'Rentabilidade'])
-
+        if df_vendas.empty:
+            st.warning("DataFrame vazio.")
+        else:
+            st.dataframe(df_vendas, 
+                                hide_index=True, 
+                                column_config={'Rentabilidade': st.column_config.NumberColumn('Rentabilidade', format='%.2f %%')},
+                                column_order=['Data Compra', 'Date', 'Symbol', 'Valor Compra', 'Close', 'Valor Venda', 'Rentabilidade'])
 
 if __name__ == "__main__":
     Application()
