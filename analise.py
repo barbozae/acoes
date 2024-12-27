@@ -112,8 +112,8 @@ def get_fundos():
 
 @st.cache_data(ttl=86400)
 def get_name_fundos():
-    df_name_fundos = pd.read_csv('https://dados.cvm.gov.br/dados/FI/CAD/DADOS/cad_fi.csv', 
-                             sep = ";", encoding = 'ISO-8859-1')
+    df_name_fundos = pd.read_csv('https://dados.cvm.gov.br/dados/FI/CAD/DADOS/cad_fi.csv',
+                             sep = ";", encoding = 'ISO-8859-1', low_memory=False)
     df_name_fundos = df_name_fundos[['CNPJ_FUNDO', 'DENOM_SOCIAL']]
     df_name_fundos = df_name_fundos.drop_duplicates()
     return df_name_fundos
@@ -124,7 +124,7 @@ def get_cdi():
     # https://www3.bcb.gov.br/sgspub/localizarseries/localizarSeries.do?method=prepararTelaLocalizarSeries
     #taxa selic 12, cdi 4398
 
-    url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial=01/01/2023&dataFinal=31/12/2024"
+    url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial=01/01/2024&dataFinal=31/12/2024"
     response = requests.get(url)
     dados = response.json()
     # Converter para DataFrame
@@ -138,6 +138,20 @@ def get_cdi():
     df_cdi['Symbol'] = df_cdi['Symbol'] = 'CDI'
     return df_cdi
 
+def get_dolar():
+    url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/01/2024&dataFinal=31/12/2024"
+    response = requests.get(url)
+    dados = response.json()
+    # Converter para DataFrame
+    df_dolar = pd.DataFrame(dados)
+    # Converter a coluna 'data' para o tipo datetime
+    df_dolar['data'] = pd.to_datetime(df_dolar['data'], format='%d/%m/%Y')
+    # Converter a coluna 'valor' para o tipo float
+    df_dolar['valor'] = df_dolar['valor'].astype(float)
+    # Calculando a variação percentual dia a dia
+    df_dolar = df_dolar.rename(columns={'valor': 'Close', 'data': 'Date'})
+    df_dolar['Symbol'] = df_dolar['Symbol'] = 'Dolar'
+    return df_dolar
 
 class Application:
     def __init__(self):
@@ -230,7 +244,7 @@ class Application:
         df_fundos = get_fundos()
         df_name_fundos = get_name_fundos()
         df_cdi = get_cdi()
-        # df_cdi['Rendimento'] = df_cdi['Close'].cumsum()
+        df_dolar = get_dolar()
 
         base_fundos = pd.merge(df_fundos, df_name_fundos, how = "left", 
                             left_on = ["CNPJ_FUNDO"], right_on = ["CNPJ_FUNDO"])
@@ -238,7 +252,7 @@ class Application:
         base_multimercado = base_fundos.rename(columns={'DENOM_SOCIAL': 'Symbol', 'DT_COMPTC': 'Date', 'VL_QUOTA': 'Close'})
 
         # Concatenar base_multimercado e df_cdi
-        base_multimercado = pd.concat([base_multimercado, df_cdi], ignore_index=True)
+        base_multimercado = pd.concat([base_multimercado, df_cdi, df_dolar], ignore_index=True)
 
         # base_multimercado = base_multimercado[base_multimercado['Symbol'].str.contains("ARMOR AXE FI|ABSOLUTE HIDRACDI", na = False)]
     
@@ -279,7 +293,8 @@ class Application:
 
         # Filtro por Symbol
         selecao = st.radio('Seleção',
-                                    ['Top5 + Minhas Ações', 'Acompanhando', 'Top5', 'Minhas Ações', 'MultiMercado', 'Fundo', 'Exterior', 'CriptoMoeda'], horizontal=True, index=2)
+                                ['Top5 + Minhas Ações', 'Acompanhando', 'Top5', 'Minhas Ações', 'MultiMercado',
+                                    'Fundo', 'Exterior', 'CriptoMoeda'], horizontal=True, index=2)
         
         # Obter os símbolos disponíveis no DataFrame
         simbolos = df['Symbol'].unique()
