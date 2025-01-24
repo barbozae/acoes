@@ -31,11 +31,11 @@ def get_acoes():
                'ALUP11.SA', 'BBAS3.SA', 'CPLE6.SA', 'CYRE3.SA', 'VIVA3.SA', 'PRIO3.SA',\
                 'WEGE3.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA',\
                 # Cripto de baixo risco
-                'BTC-USD', 'ETH-USD'\
+                'BTC-USD', 'ETH-USD',\
                 # Cripto de médio risco
                 'LINK-USD', 'TON-USD', 'ATOM-USD', 'SOL-USD',  'AVAX-USD', 'ARB-USD', 'OP-USD',\
                 # Cripto de alto risco    
-                'APT-USD', 'SUI20947-USD', 'LDO-USD', 'ME-USD'\
+                'APT-USD', 'SUI20947-USD', 'LDO-USD', 'ME-USD',\
                 # ETF exterior
                 'VOO', 'QQQ', 'ACWI', 'HACK', 'VUG', 'VB']
 
@@ -97,7 +97,7 @@ def get_fundos():
 
             # Filtrar os dados com base no CNPJ após garantir o nome correto da coluna
             dados_fundos = dados_fundos[dados_fundos['CNPJ_FUNDO'].str.contains(
-                "20.147.389/0001-00|34.172.497/0001-47|47.612.737/0001-29|36.249.317/0001-03", 
+                "20.147.389/0001-00|34.172.497/0001-47|47.612.737/0001-29|36.249.317/0001-03|10.264.255/0001-15", 
                 na=False
             )]
             # Adicionar os dados do mês ao DataFrame completo
@@ -261,6 +261,7 @@ class Application:
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ABSOLUTE HIDRA CDI FIC DE FIF RENDA FIXA INVESTIMENTO EM INFRAESTRUTURA CRÉDITO PRIVADO - RL', 'ABSOLUTE HIDRA')
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ITAÚ AÇÕES BDR NÍVEL I FUNDO DE INVESTIMENTO EM COTAS DE FUNDOS DE INVESTIMENTO', 'ITAÚ FUNDOS')
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ITAÚ INDEX US TECH FUNDO DE INVESTIMENTO EM COTAS DE FUNDOS DE INVESTIMENTO EM AÇÕES', 'US TECH')
+        base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ITAÚ RENDA FIXA CRÉDITO PRIVADO DIFERENCIADO FIF RESP LIMITADA', 'RF CP DIFERENCIADO')
 
         # Concatenando os DataFrames verticalmente
         df = pd.concat([df_acoes, base_multimercado], ignore_index=True)
@@ -312,7 +313,7 @@ class Application:
                         'APT-USD', 'SUI20947-USD', 'LDO-USD'
                         ]
 
-        exterior = ['VOO', 'QQQ', 'ACWI']
+        exterior = ['VOO', 'QQQ', 'ACWI', 'HACK', 'VUG', 'VB']
 
         if selecao == 'Top5 + Minhas Ações':
             default_selecao = minha_acoes + top5_itau
