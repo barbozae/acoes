@@ -40,8 +40,10 @@ def get_acoes():
                 'VOO', 'QQQ', 'ACWI', 'HACK', 'VUG', 'VB',\
                 # Dolar
                 'BRL=X',\
-                # EFT 
-                'BIEV39.SA']
+                # EFT Europeu
+                'BIEV39.SA',
+                # Ações Exterior
+                '^GSPC']
 
     # Função para coletar e processar os dados
     def get_crypto_data(symbol):
@@ -267,6 +269,8 @@ class Application:
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ITAÚ INDEX US TECH FUNDO DE INVESTIMENTO EM COTAS DE FUNDOS DE INVESTIMENTO EM AÇÕES', 'US TECH')
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ITAÚ RENDA FIXA DIFERENCIADO CRÉDITO PRIVADO FUNDO DE INVESTIMENTO FINANCEIRO DA CIC RESP LIMITADA', 'DIFERENCIADO RF')
 
+        df_acoes['Symbol'] = df_acoes['Symbol'].replace('^GSPC', 'S&P500')
+
         # Concatenando os DataFrames verticalmente
         df = pd.concat([df_acoes, base_multimercado], ignore_index=True)
 
@@ -309,7 +313,7 @@ class Application:
                         'APT21794-USD', 'SUI20947-USD', 'LDO-USD', 'ME32197-USD'
                         ]
 
-        exterior = ['VOO', 'QQQ', 'ACWI', 'HACK', 'VUG', 'VB']
+        exterior = ['S&P500', 'VOO', 'QQQ', 'ACWI', 'HACK', 'VUG', 'VB']
 
         if selecao == 'Top5 + Minhas Ações':
             default_selecao = minha_acoes + top5_itau
