@@ -26,23 +26,27 @@ st.set_page_config(
 def get_acoes():
     # Definindo os símbolos das criptomoedas
     symbols = [
-               # Ações
-               '^BVSP', 'CXSE3.SA', 'PETR4.SA', 'DIRR3.SA', 'EQTL3.SA', 'SANB11.SA','ITUB4.SA', \
-               'ALUP11.SA', 'BBAS3.SA', 'CPLE6.SA', 'CYRE3.SA', 'VIVA3.SA', 'PRIO3.SA',\
+                # Ações
+                '^BVSP', 'CXSE3.SA', 'PETR4.SA', 'DIRR3.SA', 'EQTL3.SA', 'SANB11.SA','ITUB4.SA', \
+                'ALUP11.SA', 'BBAS3.SA', 'CPLE6.SA', 'CYRE3.SA', 'VIVA3.SA', 'PRIO3.SA',\
                 'WEGE3.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA',\
                 # Cripto de baixo risco
                 'BTC-USD', 'ETH-USD',\
                 # Cripto de médio risco
-                'LINK-USD', 'TON-USD', 'ATOM-USD', 'SOL-USD',  'AVAX-USD', 'ARB-USD', 'OP-USD',\
+                'LINK-USD', 'TON11419-USD', 'ATOM-USD', 'SOL-USD',  'AVAX-USD', 'ARB11841-USD', 'OP-USD',\
                 # Cripto de alto risco    
-                'APT-USD', 'SUI20947-USD', 'LDO-USD', 'ME-USD',\
+                'APT21794-USD', 'SUI20947-USD', 'LDO-USD', 'ME32197-USD',\
                 # ETF exterior
-                'VOO', 'QQQ', 'ACWI', 'HACK', 'VUG', 'VB']
+                'VOO', 'QQQ', 'ACWI', 'HACK', 'VUG', 'VB',\
+                # Dolar
+                'BRL=X',\
+                # EFT 
+                'BIEV39.SA']
 
     # Função para coletar e processar os dados
     def get_crypto_data(symbol):
         # Baixando os dados históricos (preço) e os dividendos
-        data = yf.download(symbol, period='1y')
+        data = yf.download(symbol, period='max')
         dividends = yf.Ticker(symbol).dividends  # Coletando os dividendos
         
         # Resetando o índice para transformar o índice em uma coluna
@@ -67,7 +71,7 @@ def get_acoes():
 
 @st.cache_data(ttl=43200)
 def get_fundos():
-    ano = "2024"
+    ano = "2025"
     # Criar uma lista para armazenar os DataFrames de cada mês
     dados_completos = []
     # Loop para iterar sobre todos os meses do ano
@@ -97,7 +101,7 @@ def get_fundos():
 
             # Filtrar os dados com base no CNPJ após garantir o nome correto da coluna
             dados_fundos = dados_fundos[dados_fundos['CNPJ_FUNDO'].str.contains(
-                "20.147.389/0001-00|34.172.497/0001-47|47.612.737/0001-29|36.249.317/0001-03|10.264.255/0001-15", 
+                "20.147.389/0001-00|34.172.497/0001-47|47.612.737/0001-29|36.249.317/0001-03|20.335.522/0001-51", 
                 na=False
             )]
             # Adicionar os dados do mês ao DataFrame completo
@@ -124,7 +128,7 @@ def get_cdi():
     # https://www3.bcb.gov.br/sgspub/localizarseries/localizarSeries.do?method=prepararTelaLocalizarSeries
     #taxa selic 12, cdi 4398
 
-    url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial=01/01/2024&dataFinal=31/12/2024"
+    url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial=01/01/2025&dataFinal=31/12/2025"
     response = requests.get(url)
     dados = response.json()
     # Converter para DataFrame
@@ -138,20 +142,20 @@ def get_cdi():
     df_cdi['Symbol'] = df_cdi['Symbol'] = 'CDI'
     return df_cdi
 
-def get_dolar():
-    url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/01/2024&dataFinal=31/12/2024"
-    response = requests.get(url)
-    dados = response.json()
-    # Converter para DataFrame
-    df_dolar = pd.DataFrame(dados)
-    # Converter a coluna 'data' para o tipo datetime
-    df_dolar['data'] = pd.to_datetime(df_dolar['data'], format='%d/%m/%Y')
-    # Converter a coluna 'valor' para o tipo float
-    df_dolar['valor'] = df_dolar['valor'].astype(float)
-    # Calculando a variação percentual dia a dia
-    df_dolar = df_dolar.rename(columns={'valor': 'Close', 'data': 'Date'})
-    df_dolar['Symbol'] = df_dolar['Symbol'] = 'Dolar'
-    return df_dolar
+# def get_dolar():
+#     url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/01/2024&dataFinal=31/12/2024"
+#     response = requests.get(url)
+#     dados = response.json()
+#     # Converter para DataFrame
+#     df_dolar = pd.DataFrame(dados)
+#     # Converter a coluna 'data' para o tipo datetime
+#     df_dolar['data'] = pd.to_datetime(df_dolar['data'], format='%d/%m/%Y')
+#     # Converter a coluna 'valor' para o tipo float
+#     df_dolar['valor'] = df_dolar['valor'].astype(float)
+#     # Calculando a variação percentual dia a dia
+#     df_dolar = df_dolar.rename(columns={'valor': 'Close', 'data': 'Date'})
+#     df_dolar['Symbol'] = df_dolar['Symbol'] = 'Dolar'
+#     return df_dolar
 
 class Application:
     def __init__(self):
@@ -244,7 +248,7 @@ class Application:
         df_fundos = get_fundos()
         df_name_fundos = get_name_fundos()
         df_cdi = get_cdi()
-        df_dolar = get_dolar()
+        # df_dolar = get_dolar()
 
         base_fundos = pd.merge(df_fundos, df_name_fundos, how = "left", 
                             left_on = ["CNPJ_FUNDO"], right_on = ["CNPJ_FUNDO"])
@@ -252,16 +256,16 @@ class Application:
         base_multimercado = base_fundos.rename(columns={'DENOM_SOCIAL': 'Symbol', 'DT_COMPTC': 'Date', 'VL_QUOTA': 'Close'})
 
         # Concatenar base_multimercado e df_cdi
-        base_multimercado = pd.concat([base_multimercado, df_cdi, df_dolar], ignore_index=True)
+        base_multimercado = pd.concat([base_multimercado, df_cdi], ignore_index=True)
 
         # base_multimercado = base_multimercado[base_multimercado['Symbol'].str.contains("ARMOR AXE FI|ABSOLUTE HIDRACDI", na = False)]
     
         # Substituir os valores na coluna 'nome_fundo'
+        base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ITAÚ AÇÕES BDR NÍVEL I FUNDO DE INVESTIMENTO EM COTAS DE FUNDOS DE INVESTIMENTO', 'ITAÚ FUNDOS')
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ARMOR AXE FI EM COTAS DE FUNDOS DE INVESTIMENTO MULTIMERCADO', 'ARMOR AXE')
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ABSOLUTE HIDRA CDI FIC DE FIF RENDA FIXA INVESTIMENTO EM INFRAESTRUTURA CRÉDITO PRIVADO - RL', 'ABSOLUTE HIDRA')
-        base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ITAÚ AÇÕES BDR NÍVEL I FUNDO DE INVESTIMENTO EM COTAS DE FUNDOS DE INVESTIMENTO', 'ITAÚ FUNDOS')
         base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ITAÚ INDEX US TECH FUNDO DE INVESTIMENTO EM COTAS DE FUNDOS DE INVESTIMENTO EM AÇÕES', 'US TECH')
-        base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ITAÚ RENDA FIXA CRÉDITO PRIVADO DIFERENCIADO FIF RESP LIMITADA', 'RF CP DIFERENCIADO')
+        base_multimercado['Symbol'] = base_multimercado['Symbol'].replace('ITAÚ RENDA FIXA DIFERENCIADO CRÉDITO PRIVADO FUNDO DE INVESTIMENTO FINANCEIRO DA CIC RESP LIMITADA', 'DIFERENCIADO RF')
 
         # Concatenando os DataFrames verticalmente
         df = pd.concat([df_acoes, base_multimercado], ignore_index=True)
@@ -269,14 +273,6 @@ class Application:
         st.title('👨🏻‍💼 Análise Carteira de Ações')
         
         df['Date'] = pd.to_datetime(df['Date']).dt.date
-        # Adiciona o slider para selecionar o intervalo de datas
-        # dates = df['Date'].unique()
-
-        # self.inicio_data, self.fim_data = st.select_slider(
-        #                                         "Selecione o intervalo de datas",
-        #                                         options=dates,
-        #                                         value=(dates.min(), dates.max())
-        #                                         )
         
         # datas que inicia o sistema
         tempo = time.time()
@@ -300,17 +296,17 @@ class Application:
         # Obter os símbolos disponíveis no DataFrame
         simbolos = df['Symbol'].unique()
 
-        top5_itau = ['CXSE3.SA', 'PRIO3.SA', 'DIRR3.SA', 'EQTL3.SA', 'SANB11.SA']
-        minha_acoes = ['ALUP11.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'ITUB4.SA', 'VIVA3.SA']
-        multimercado = ['ARMOR AXE', 'ABSOLUTE HIDRA']
+        top5_itau = ['CXSE3.SA', 'PRIO3.SA', 'DIRR3.SA', 'EQTL3.SA', 'SUZB3.SA']
+        minha_acoes = ['ALUP11.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'ITUB4.SA', 'VIVA3.SA', 'BIEV39.SA']
+        multimercado = ['ARMOR AXE', 'ABSOLUTE HIDRA', 'DIFERENCIADO RF']
         acompanhando = ['PETR4.SA', 'VALE3.SA', 'GMAT3.SA', 'IGTI11.SA', 'SUZB3.SA', 'WEGE3.SA']
         fundos = ['US TECH', 'ITAÚ FUNDOS']
         cripto_moeda = [# Baixo risco
                         'BTC-USD', 'ETH-USD',
                         # Médio risco
-                        'LINK-USD', 'TON-USD', 'ATOM-USD', 'SOL-USD',  'AVAX-USD', 'ARB-USD', 'OP-USD',
+                        'LINK-USD', 'TON-USD', 'ATOM-USD', 'SOL-USD',  'AVAX-USD', 'ARB11841-USD', 'OP-USD',
                         # Alto risco    
-                        'APT-USD', 'SUI20947-USD', 'LDO-USD'
+                        'APT21794-USD', 'SUI20947-USD', 'LDO-USD', 'ME32197-USD'
                         ]
 
         exterior = ['VOO', 'QQQ', 'ACWI', 'HACK', 'VUG', 'VB']
@@ -341,11 +337,6 @@ class Application:
                                        placeholder='Escolha uma opção')
         if self.select_symbol:
             df = df[df['Symbol'].isin(self.select_symbol)]
-
-        # Nesse parte eu pego a data exata da seleção
-        # Filtra o DataFrame com base no intervalo de datas selecionado
-        # mask = (df['Date'] >= self.inicio_data) & (df['Date'] <= self.fim_data)
-        # self.filtered_df = df.loc[mask]
 
         # Encontra o último dia útil antes da `inicio_data`
         ultimo_dia_util = df[df['Date'] < self.inicio_data].Date.max()
@@ -467,6 +458,7 @@ class Application:
                 return rendimento
             # Aplicar a função para cada linha
             self.table_geral['Rendimento'] = self.table_geral.apply(calcular_rendimento_linha, axis=1, df=self.table_geral)
+            # self.table_geral['Rendimento'] = self.table_geral.apply(calcular_rendimento_linha, axis=1)
 
             st.dataframe(self.table_geral, hide_index=True, column_order=['Date', 'Symbol', 'Open', 'Low', 'Close', 'Variação', 'Rendimento'])
 
@@ -579,21 +571,7 @@ class Application:
         with cols[1]:
             df_dividendo_acum = df.groupby(['Symbol'])['Dividends'].sum()
             st.write('Dividendos Acumulado')
-            ui.table(data=df_dividendo_acum.reset_index())        
-
-        # Criar o gráfico de barras usando Altair
-        # chart = alt.Chart(df).mark_bar(size=15).encode(
-        #     x='Date:T',
-        #     y='Dividends:Q',
-        #     color='Symbol:N',
-        #     tooltip=['Date', 'Symbol', 'Dividends'],
-        # ).properties(
-        #     width=800,
-        #     height=400
-        # ).interactive()
-
-        # # Exibir o gráfico no Streamlit
-        # st.altair_chart(chart, use_container_width=True)
+            ui.table(data=df_dividendo_acum.reset_index())
 
     def rendimento(self):
         df = self.filtered_df.copy()
@@ -711,19 +689,23 @@ class Application:
         # gerando dicionario com valores de venda
         valor_venda = {
             'Symbol': ['ALUP11.SA', 'CPLE6.SA', 'BBAS3.SA', 'CYRE3.SA', 'ITUB4.SA', 'VIVA3.SA',
-                        'BTC-USD', 'ETH-USD', 'LINK-USD', 'TON-USD', 'ATOM-USD', 'SOL-USD',
-                        'AVAX-USD', 'ARB-USD', 'APT-USD', 'LDO-USD', 'SUI20947-USD', 'OP-USD', 'ME-USD'],
+                        'BTC-USD', 'ETH-USD', 'LINK-USD', 'TON11419-USD', 'ATOM-USD', 'SOL-USD',
+                        'AVAX-USD', 'ARB11841-USD', 'APT21794-USD', 'LDO-USD', 'SUI20947-USD', 'OP-USD', 'ME32197-USD',
+                        'BIEV39.SA'],
             'Valor Venda': [42.7, 13.30, 31.00, 30.00, 0.00, 32.00,
                             119594.41, 4758.36, 30.77, 8.05, 11.98, 282.59,
-                            63.36, 1.37, 17.06, 2.57, 4.96, 3.14, 6.52
+                            63.36, 1.37, 17.06, 2.57, 4.96, 3.14, 6.52,
+                            68.50
                             ],
             'Valor Compra': [31.57, 10.67, 28.35, 22.25, 36.57, 27.07,
                               99662, 3965.3, 25.64, 6.71, 9.98, 235.49,
-                              52.80, 1.14, 14.22, 2.14, 4.13, 2.62, 5.43
+                              52.80, 1.14, 14.22, 2.14, 4.13, 2.62, 5.43,
+                              82.56
                               ],
             'Data Compra': ['2024-08-26', '2024-08-26', '2024-08-26', '2024-08-27', '2024-08-23', '2024-08-26',
                             '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-08',
-                            '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-10']
+                            '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-08', '2024-12-10',
+                            '2024-01-30']
             }        
         df_valor_venda = pd.DataFrame(valor_venda)
 
